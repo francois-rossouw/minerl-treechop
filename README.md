@@ -30,4 +30,6 @@ Environments currently available for training:
   - [x] Enable local csv logging (`--local-log`, stored in the [runs_recordings](/runs_recordings) dir.)
 
 ### Sample video
+Click [here](https://drive.google.com/file/d/1UrMakspToYwSogeae1UkFy_On-lfspg9/view?usp=sharing) to see a better quality version at 1x speed.
+
 ![Sample video](resources/Treechop_vid.gif)
