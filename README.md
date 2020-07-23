@@ -29,6 +29,11 @@ Environments currently available for training:
   - [x] Enable `wandb` logging (`--log-run`, combine with `--verbosity 0` to avoid large terminal upload.)
   - [x] Enable local csv logging (`--local-log`, stored in the [runs_recordings](/runs_recordings) dir.)
 
+### Results
+![Mean plot](resources/mean_plot_20_ep.png)
+<img src="resources/mean_plot_20_ep.png" width="800" height="500" />
+![Median plot](resources/median_plot_20_ep.png)
+
 ### Sample video
 Click [here](https://drive.google.com/file/d/1UrMakspToYwSogeae1UkFy_On-lfspg9/view?usp=sharing) to see a better quality version at 1x speed.
 
