@@ -29,6 +29,5 @@ Environments currently available for training:
   - [x] Enable `wandb` logging (`--log-run`, combine with `--verbosity 0` to avoid large terminal upload.)
   - [x] Enable local csv logging (`--local-log`, stored in the [runs_recordings](/runs_recordings) dir.)
 
-
-### Sample video:
-![Sample Video](resources/Treechop_vid.mp4)
+### Sample video
+![Sample video](resources/Treechop_vid.gif)
