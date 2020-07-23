@@ -31,7 +31,6 @@ Environments currently available for training:
 
 ### Results
 ![Mean plot](resources/mean_plot_20_ep.png)
-<img src="resources/mean_plot_20_ep.png" width="800" height="500" />
 ![Median plot](resources/median_plot_20_ep.png)
 
 ### Sample video
