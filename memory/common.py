@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from collections import OrderedDict
-from typing import Union, List, Dict, Tuple
-
-from utils.wrappers import LazyFrames
+from typing import List, Dict
 
 
 def reward_discount(sample: List[Dict], gamma=0.99):
