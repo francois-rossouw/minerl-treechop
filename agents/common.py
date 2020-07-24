@@ -5,12 +5,10 @@ from abc import ABC, abstractmethod
 import numpy as np
 import torch
 from torch import nn
-from torch.distributions import Normal
 from torch.nn import functional as F
 
 from utils.gen_args import Arguments
 from memory.common import ReplayBufferAbstract
-from utils.mylogger import Logger
 from agents.resnet_head import IMPALAResnet
 
 
@@ -235,10 +233,5 @@ class AgentAbstract(ABC):
 
 def init_weights(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
-        # torch.nn.init.normal_(m.weight, mean=0.0, std=nn.init.calculate_gain('relu'))
-        # torch.nn.init.uniform_(m.weight, a=0.0, b=nn.init.calculate_gain('relu'))
-        # torch.nn.init.xavier_uniform_(m.weight, gain=1.0)
         torch.nn.init.kaiming_uniform_(m.weight, a=0, mode='fan_in', nonlinearity='relu')
-        # torch.nn.init.kaiming_normal_(m.bias, a=0.25, mode='fan_in', nonlinearity='relu')
         torch.nn.init.constant_(m.bias, 0.01)
-        # torch.nn.init.normal_(m.bias, mean=0.0, std=1.0)

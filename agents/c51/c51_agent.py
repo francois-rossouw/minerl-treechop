@@ -13,11 +13,12 @@ from utils.mylogger import Logger
 
 class C51(DQN):
     def __init__(self, args: Arguments, logger: Logger, action_space, observation_space, p_idx=0, **kwargs):
-        """
-        C51 agent extended from DQN agent class
+        """C51 agent extended from DQN agent class
         :param args: all default arguments. Can be changed in cmd line
         :param logger: logging object
         :param action_space: action space of gym env
+        :param observation_space: observation space of gym env
+        :param p_idx: policy index
         :return: self
         """
         super(C51, self).__init__(args, logger, action_space, observation_space, p_idx, **kwargs)

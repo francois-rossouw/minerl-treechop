@@ -7,9 +7,7 @@ from utils.wrappers import LazyFrames
 
 
 def reward_discount(sample: List[Dict], gamma=0.99):
-    """
-    Reward discounting for multi-step DQN
-    """
+    """Reward discounting for multi-step DQN."""
     if "discounted_reward" in sample[0]:
         return sample[0]["discounted_reward"]
     discounted_reward = sum([step["reward"] * gamma**idx for idx, step in enumerate(sample)])
@@ -18,9 +16,7 @@ def reward_discount(sample: List[Dict], gamma=0.99):
 
 
 class ReplayBufferAbstract(ABC):
-    """
-    Abstract class for replay buffer
-    """
+    """Abstract class for replay buffer"""
     demo_samples: int
 
     @abstractmethod
@@ -57,6 +53,7 @@ class ReplayBufferAbstract(ABC):
 
 
 class ExperienceSamples:
+    """Object to store a batch of experiences. Centralizes nearly all batch processing to small functions."""
     def __init__(self, samples: List[List[Dict]], n_step=10, gamma=0.99, state_cache={}):
         self.samples = samples
         self.n_step = n_step

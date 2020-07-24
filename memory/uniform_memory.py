@@ -21,10 +21,9 @@ class UniformExperienceBuffer(ReplayBufferAbstract):
             lambda: deque([], maxlen=n_step))
 
     def set_pretrain_phase(self, pretraining: bool):
-        """
-        Only needed for demo memory
+        """Only needed for demo memory
         :param pretraining:
-        :return:
+        :return: None
         """
         pass
 
@@ -67,10 +66,9 @@ class UniformExperienceBuffer(ReplayBufferAbstract):
         return samples, None
 
     def update_priorities(self, errors, **kwargs):
-        """
-        Should not do anything in uniform sampling, makes code simpler by not requiring another if.
+        """Should not do anything in uniform sampling, makes code simpler by not requiring another if.
         :param errors:
-        :return:
+        :return: None
         """
         pass
 
@@ -81,6 +79,6 @@ class UniformExperienceBuffer(ReplayBufferAbstract):
     def __len__(self):
         return self.entries
 
-    def stop_current_episode(self, env_id=0):
+    def stop_current_episode(self, env_id=0, p_idx=0):
         last_n_transitions = self.last_n_transitions[env_id]
         self.add_transition(last_n_transitions, done=True)

@@ -3,7 +3,6 @@ import math
 import copy
 from typing import Tuple, Union, List, Dict
 from collections import deque, OrderedDict, Counter
-from itertools import repeat
 
 import cv2
 import numpy as np
@@ -17,10 +16,7 @@ from utils.wrappers import LazyFrames
 
 
 class CamDiscrete(gym.spaces.Discrete):
-    """
-    New space for camera actions.
-    Simply changes no_op actions to map to no camera movement
-    """
+    """New space for camera actions. Simply changes no_op actions to map to no camera movement."""
     def __init__(self, n):
         super(CamDiscrete, self).__init__(n)
         self.zero_idx = math.floor(n/2)
@@ -30,9 +26,7 @@ class CamDiscrete(gym.spaces.Discrete):
 
 
 class TupleSpace(gym.Space):
-    """
-    Space to change dict observation space of minerl to a tuple. Default shape is from first space.
-    """
+    """Space to change dict observation space of minerl to a tuple. Default shape is from first space."""
     def __init__(self, spaces: Tuple[gym.Space, gym.Space]):
         self.spaces = spaces
         for space in spaces:
@@ -89,8 +83,7 @@ class PoVWrapper(gym.ObservationWrapper):
 
 
 class PoVInvWrapper(gym.ObservationWrapper):
-    """
-    Uses TupleSpace above to change observation space of minerl env from dict to tuple
+    """Uses TupleSpace above to change observation space of minerl env from dict to tuple.
     Also appends mainhand item to inventory
     """
     def __init__(self, env):
@@ -110,9 +103,7 @@ class PoVInvWrapper(gym.ObservationWrapper):
 
 
 class ContToDiscActions(gym.ActionWrapper):
-    """
-    Convert continuous actions to discrete actions with a list of bins (specifically the camera)
-    """
+    """Convert continuous actions to discrete actions with a list of bins (specifically the camera)."""
     def __init__(self, env, bins: list):
         super().__init__(env)
         self.bins = bins
@@ -144,9 +135,7 @@ class ContToDiscActions(gym.ActionWrapper):
 
 
 class ExcludeActions(gym.ActionWrapper):
-    """
-    Remove actions from action space assuming a dict action space from MineRL
-    """
+    """Remove actions from action space assuming a dict action space from MineRL."""
     def __init__(self, env, excluded_actions: list = None):
         super().__init__(env)
         self.ex_action = self.env.action_space.no_op()
@@ -168,8 +157,7 @@ class ExcludeActions(gym.ActionWrapper):
 
 
 class MineRLFrameSkip(gym.Wrapper):
-    """
-    Return every `skip`-th frame and repeat given action during skip.
+    """Return every `skip`-th frame and repeat given action during skip.
     Note that this wrapper does not "maximize" over the skipped _frames.
     The stepping function also ensures that a crafting action provided by the agent is only used once.
     """
@@ -195,9 +183,7 @@ class MineRLFrameSkip(gym.Wrapper):
 
 class MineRLFrameStack(gym.Wrapper):
     def __init__(self, env, k, obtain_env: bool = True):
-        """
-        Stack k last frames.
-        Adapted from baselines.common.atari_wrappers
+        """Stack k last frames. Adapted from baselines.common.atari_wrappers
         Changed to pre-transpose frames before creating memory-safe lazyframe object
         """
         super().__init__(env)
@@ -238,8 +224,7 @@ class MineRLFrameStack(gym.Wrapper):
 
 
 class OneMovementAction(gym.ActionWrapper):
-    """
-    Split action space into movement & crafting actions. Similar to Hierarchical Deep Q-Network from Imperfect
+    """Split action space into movement & crafting actions. Similar to Hierarchical Deep Q-Network from Imperfect
     Demonstrations in Minecraft paper at https://arxiv.org/pdf/1912.08664.pdf
     """
     def __init__(self, env, craft_keys: List[str]):
@@ -293,8 +278,7 @@ class OneMovementAction(gym.ActionWrapper):
 
 
 class DictClone(gym.ActionWrapper):
-    """
-    Add this after all other action wrappers to ensure action dicts are not modified in replay memory.
+    """Add this after all other action wrappers to ensure action dicts are not modified in replay memory.
     Makes copying actions unnecessary. Also ensures specific order to actions.
     """
     def __init__(self, env):
@@ -333,18 +317,14 @@ class MyLazyFrames(LazyFrames):
 
 
 class LazyFramesFlipped(MyLazyFrames):
-    """
-    Useful extension to lazyframes that allows for the flipping of existing frames without storing twice.
-    """
+    """Useful extension to lazyframes that allows for the flipping of existing frames without storing twice."""
     def _force(self):
         out = super()._force()
         return np.flip(out, axis=2).copy()
 
 
 class LogRewardData(gym.Wrapper):
-    """
-    Logs reward data to allow user to view what the agent has achieved.
-    """
+    """Logs reward data to allow user to view what the agent has achieved."""
     def __init__(self, env, episode=0):
         super().__init__(env)
         self.filename = '/'.join([os.getcwd(), 'logs', 'rewards.txt'])

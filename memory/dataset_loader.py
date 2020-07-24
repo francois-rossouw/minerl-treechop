@@ -32,8 +32,7 @@ class CraftingRollout:
 
 
 class ExpertDataset(Dataset):
-    """
-    Custom dataset loader for MineRL human recorded data. Fixes some errors in the obtain envs for example
+    """Custom dataset loader for MineRL human recorded data. Fixes some errors in the obtain envs for example
     crafting multiple items in a single step (something which an agent can't do).
     Largely adapted from MineRL's own data loader.
     """
@@ -269,8 +268,7 @@ class ExpertDataset(Dataset):
 
     @staticmethod
     def _fix_inventory(actions, invs, n_invs, rewards, frame_skip=4):
-        """
-        Very sloppy code... However it is necessary to deal with flaws in demo data.
+        """Very sloppy code... However it is necessary to deal with flaws in demo data.
         :param actions:
         :param invs:
         :param n_invs:

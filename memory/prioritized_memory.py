@@ -10,8 +10,7 @@ from utils.wrappers import LazyFrames
 
 
 class PrioritizedExperienceBuffer(UniformExperienceBuffer):
-    """
-    Prioritised replay buffer. Inspired by
+    """Prioritised replay buffer. Inspired by
     https://github.com/chainer/chainerrl/blob/master/chainerrl/replay_buffers/prioritized.py
     """
     def __init__(self, capacity, n_step, eps=0.01, alpha=0.6, beta0=0.4,

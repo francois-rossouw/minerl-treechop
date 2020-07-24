@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Union, List, Any, Callable, Iterable
+from typing import Union, List, Iterable
 import torch
 from torch import nn
 from gym import spaces

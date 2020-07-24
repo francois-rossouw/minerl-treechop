@@ -34,9 +34,7 @@ class Timer:
 
 @dataclass
 class Logger:
-    """
-    Class to track stats listed below. Also some functions to extend the use case.
-    """
+    """Class to track stats listed below. Also some functions to extend the use case."""
     use_wandb: bool
     step: int = 0
     episode: int = 1
@@ -55,9 +53,7 @@ class Logger:
     dw: DataWriter = None
 
     def __post_init__(self):
-        """
-        Gets called after the default init of a dataclass
-        """
+        """Gets called after the default init of a dataclass"""
         from utils.utilities import print_b
         self.print_b = print_b
         self.rewards = []
@@ -69,8 +65,7 @@ class Logger:
         self.dw = DataWriter(args)
 
     def init_tracker(self, **kwargs):
-        """
-        Initializes instance to values given in kwargs. Starts timer and accounts for continued runs if given a
+        """Initializes instance to values given in kwargs. Starts timer and accounts for continued runs if given a
         'duration' key.
         :param kwargs:
         :return: None
@@ -92,9 +87,7 @@ class Logger:
         self.timer.stop()
 
     def get_time_str(self):
-        """
-        Get time in a readable format. (00h 00m 00s)
-        """
+        """Get time in a readable format. (00h 00m 00s)"""
         duration = self.timer.elapsed
         return '{:02d}h {:02d}m {:02d}s'.format(
             int(duration / 3600), int((duration % 3600) / 60), int(duration % 60)
@@ -113,10 +106,9 @@ class Logger:
             self.loss.append(float(loss))
 
     def finish_episode(self, verbose):
-        """
-        Update parameters and print current progress
+        """Update parameters and print current progress
         :param verbose: Print current progress
-        :return:
+        :return: None
         """
         dur, sum_reward, expert_percent = self._get_print_data()
         if self.use_wandb:

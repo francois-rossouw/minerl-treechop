@@ -16,8 +16,7 @@ def fill_stacked_memory(
         args: Arguments, fill_size, action_space: Union[spaces.Dict, spaces.Discrete],
         pretrain_action_space: Union[spaces.Dict, spaces.Discrete],
         memory: DemoReplayBuffer) -> None:
-    """
-    Fill memory replay with human observations. Adjust data to match environment input & output.
+    """Fill memory replay with human observations. Adjust data to match environment input & output.
     :param args: User adjustable constants.
     :param data_dir: Directory of human demonstrations.
     :param fill_size: How many human observations to store in memory.
@@ -37,9 +36,6 @@ def fill_stacked_memory(
         env = env.replace('-', 'Dense-')
     data_dir = '/'.join([str(args.minerl_data_root), env])
 
-    # craft_actions = args.crafting_actions
-    # camera_actions = args.camera_actions
-    # move_actions = args.movement_actions
     expert_dataset = ExpertDataset(data_dir=data_dir, frame_skip=args.frame_skip,
                                    alternate_data='MineRLTreechop-v0' if 'Treechop' not in args.env_name else None)
     expert_data = DataLoader(expert_dataset, batch_size=1, shuffle=False, num_workers=6, collate_fn=collate_fn)
@@ -300,8 +296,7 @@ def _single_movement_action(action, top_acts, pitch, yaw):
 
 
 def adj_exp_cam(camera: np.ndarray, frame_stack):
-    """
-    Take camera actions and average 4 _frames.
+    """Take camera actions and average 4 _frames.
     :param camera: Camera observation with pitch and yaw for full episode
     :param frame_stack: number of _frames to stack
     :return:
