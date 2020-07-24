@@ -1,7 +1,3 @@
-"""
-Checkpointing functions to save model every x epochs.
-"""
-
 import os
 import shutil
 import torch
@@ -36,6 +32,7 @@ def load_model(args, arch, model, optimizer):
 
 def get_av_score(args):
     """Loads model from storage.
+
     Arguments:
         args {argparse.Namespace} -- Input arguments for storage of constants
         model {[nets.PolicyLinear, nets.PolicyCNN]} -- Model to replace state_dict into
@@ -53,6 +50,7 @@ def get_av_score(args):
 
 def save_checkpoint(arch, state, is_best):
     """Saves state of models at certain checkpoints.
+
     Arguments:
         arch {str} -- String describing model architecture (fc / cnn)
         state {dict} -- Dictionary containing current epoch, architecture type,

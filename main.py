@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
-
 from typing import Type
 import gym
 import minerl

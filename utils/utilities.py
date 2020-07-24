@@ -18,7 +18,8 @@ def unsqueeze_obs(obs):
 
 def totensor(obs: Union[List[Union[np.ndarray, MyLazyFrames]], np.ndarray, MyLazyFrames],
              device) -> torch.Tensor:
-    """Converts input to tensor. Input can be:
+    """
+    Converts input to tensor. Input can be:
     LazyFrames, numpy arrays, List of these types, Tuple of the aforementioned.
     Output will be ready for use in PyTorch NN:
     Tensor, Tensor, Stacked Tensor, Tuple of stacked tensors
@@ -46,7 +47,8 @@ def soft_update(online: nn.Module, target: nn.Module, tau: float = 1e-2):
 
 
 def print_b(text):
-    """Print function for when progressbar is running
+    """
+    Print function for when progressbar is running
     :param text: Text to print
     :return: None
     """
@@ -64,7 +66,8 @@ def seed_things(seed):
 
 class StackSet:
     def __init__(self, stack: Union[List, Iterable] = None, maxlen: int = None, circular: bool = True):
-        """Stack FIFO style with unique values (set). Also supports a maximum length
+        """
+        Stack FIFO style with unique values (set). Also supports a maximum length
         :param stack: Initializing list
         :param maxlen: Maxlength of stack, will remove from index 0 if is_full
         :param circular: Append value from pop back to top of stack
@@ -88,7 +91,8 @@ class StackSet:
         stack.append(v)
 
     def pop(self, idx=0, val=None) -> object:
-        """Pop index from stack, defaults to start of stack. If circular is set, will push the value back to the
+        """
+        Pop index from stack, defaults to start of stack. If circular is set, will push the value back to the
         top of the stack.
         :param idx: Index to pop (default 0)
         :param val: Allows user to pop element by value

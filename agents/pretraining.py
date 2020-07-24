@@ -16,7 +16,8 @@ def fill_stacked_memory(
         args: Arguments, fill_size, action_space: Union[spaces.Dict, spaces.Discrete],
         pretrain_action_space: Union[spaces.Dict, spaces.Discrete],
         memory: DemoReplayBuffer) -> None:
-    """Fill memory replay with human observations. Adjust data to match environment input & output.
+    """
+    Fill memory replay with human observations. Adjust data to match environment input & output.
     :param args: User adjustable constants.
     :param data_dir: Directory of human demonstrations.
     :param fill_size: How many human observations to store in memory.

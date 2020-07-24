@@ -21,7 +21,8 @@ class UniformExperienceBuffer(ReplayBufferAbstract):
             lambda: deque([], maxlen=n_step))
 
     def set_pretrain_phase(self, pretraining: bool):
-        """Only needed for demo memory
+        """
+        Only needed for demo memory
         :param pretraining:
         :return: None
         """
@@ -66,7 +67,8 @@ class UniformExperienceBuffer(ReplayBufferAbstract):
         return samples, None
 
     def update_priorities(self, errors, **kwargs):
-        """Should not do anything in uniform sampling, makes code simpler by not requiring another if.
+        """
+        Should not do anything in uniform sampling, makes code simpler by not requiring another if.
         :param errors:
         :return: None
         """

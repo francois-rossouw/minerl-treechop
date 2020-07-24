@@ -1,6 +1,3 @@
-"""
-Default atari wrappers
-"""
 import numpy as np
 import gym
 import minerl
@@ -14,7 +11,7 @@ import math
 
 
 class CamDiscrete(gym.spaces.Discrete):
-    """Wrapper for when continuous value is discretized but zero is at a different index"""
+    """Wrapper for when continuous value is discretized but zero is at a different index."""
     def __init__(self, n):
         super(CamDiscrete, self).__init__(n)
         assert n % 2 != 0
@@ -26,12 +23,13 @@ class CamDiscrete(gym.spaces.Discrete):
 
 class NoopResetEnv(gym.Wrapper):
     def __init__(self, env, noop_max=30):
-        """Sample initial states by taking random number of no-ops on reset.
+        """
+        Sample initial states by taking random number of no-ops on reset.
         No-op is assumed to be action 0.
         :param env: (Gym Environment) the environment to wrap
         :param noop_max: (int) the maximum value of no-ops to run
         """
-        gym.Wrapper.__init__(self, env)
+        super().__init__(env)
         self.noop_max = noop_max
         self.override_num_noops = None
         self.noop_action = 0
@@ -126,7 +124,8 @@ class ClipRewardEnv(gym.RewardWrapper):
 
 class WarpFrame(gym.ObservationWrapper):
     def __init__(self, env, width=84, height=84, grayscale=True, dict_space_key=None):
-        """Warp frames to 84x84 as done in the Nature paper and later work.
+        """
+        Warp frames to 84x84 as done in the Nature paper and later work.
         If the environment uses dictionary observations, `dict_space_key` can be specified which indicates which
         observation should be warped.
         """
@@ -178,7 +177,8 @@ class WarpFrame(gym.ObservationWrapper):
 
 class FrameStack(gym.Wrapper):
     def __init__(self, env, k):
-        """Stack k last frames.
+        """
+        Stack k last frames.
         Returns lazy array, which is much more memory efficient.
         See Also
         --------
@@ -210,7 +210,8 @@ class FrameStack(gym.Wrapper):
 
 
 class FrameSkip(gym.Wrapper):
-    """Return every `skip`-th frame and repeat given action during skip.
+    """
+    Return every `skip`-th frame and repeat given action during skip.
     Note that this wrapper does not "maximize" over the skipped _frames.
     """
     def __init__(self, env, skip=4):
@@ -230,7 +231,8 @@ class FrameSkip(gym.Wrapper):
 
 class LazyFrames(object):
     def __init__(self, frames):
-        """This object ensures that common frames between the observations are only stored once.
+        """
+        This object ensures that common frames between the observations are only stored once.
         It exists purely to optimize memory usage which can be huge for DQN's 1M frames replay
         buffers.
         This object should only be converted to numpy array before being passed to the model.
@@ -366,7 +368,8 @@ class ContToDisc(gym.ActionWrapper):
 
 
 def make_atari(env_id):
-    """Create a wrapped atari envrionment
+    """
+    Create a wrapped atari environment.
     :param env_id: (str) the environment ID
     :return: (Gym Environment) the wrapped atari environment
     """

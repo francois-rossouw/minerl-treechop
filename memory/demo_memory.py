@@ -8,7 +8,8 @@ from utils.wrappers import LazyFrames
 
 
 class DemoReplayBuffer(ReplayBufferAbstract):
-    """Replay buffer that keeps 2 separate buffers. One for expert data and another for data obtained by the agent.
+    """
+    Replay buffer that keeps 2 separate buffers. One for expert data and another for data obtained by the agent.
     It appends to both and can sample from both.
     Adapted from the demo memory Preferred Networks baselines implementation:
     https://github.com/minerllabs/baselines/blob/master/general/chainerrl/baselines/dqfd.py
@@ -54,7 +55,8 @@ class DemoReplayBuffer(ReplayBufferAbstract):
                       skip_step=skip_step, p_idx=p_idx, prob=prob, expert=expert, **kwargs)
 
     def _sample_from_memory(self, nsample_agent, nsample_demo, p_idx):
-        """Samples experiences from memory
+        """
+        Samples experiences from memory
         :param nsample_agent: Number of RL transitions to sample
         :param nsample_demo: Number of demonstration transitions to sample
         :param p_idx: Index of priorities.
@@ -78,7 +80,8 @@ class DemoReplayBuffer(ReplayBufferAbstract):
         return sampled_demo, is_weight_demo
 
     def sample(self, n, demo_fraction=None, p_idx=0) -> Tuple[ExperienceSamples, np.ndarray]:
-        """Sample n experiences from memory.
+        """
+        Sample n experiences from memory.
         :param n: Number of experiences to sample
         :param demo_fraction: Fraction of experiences to come from demo memory. If set will override 50/50
         :param p_idx: Index of priorities.

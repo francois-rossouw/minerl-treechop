@@ -11,7 +11,7 @@ from utils.gen_args import Arguments
 
 
 class DataWriter:
-    """Object for logging results of training / evaluation"""
+    """Object for logging results of training / evaluation."""
     def __init__(self, args: Arguments):
         self.start_time = datetime.now()
         self.folder = 'runs_recordings'

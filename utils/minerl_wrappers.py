@@ -83,7 +83,8 @@ class PoVWrapper(gym.ObservationWrapper):
 
 
 class PoVInvWrapper(gym.ObservationWrapper):
-    """Uses TupleSpace above to change observation space of minerl env from dict to tuple.
+    """
+    Uses TupleSpace above to change observation space of minerl env from dict to tuple
     Also appends mainhand item to inventory
     """
     def __init__(self, env):
@@ -157,7 +158,8 @@ class ExcludeActions(gym.ActionWrapper):
 
 
 class MineRLFrameSkip(gym.Wrapper):
-    """Return every `skip`-th frame and repeat given action during skip.
+    """
+    Return every `skip`-th frame and repeat given action during skip.
     Note that this wrapper does not "maximize" over the skipped _frames.
     The stepping function also ensures that a crafting action provided by the agent is only used once.
     """
@@ -183,7 +185,9 @@ class MineRLFrameSkip(gym.Wrapper):
 
 class MineRLFrameStack(gym.Wrapper):
     def __init__(self, env, k, obtain_env: bool = True):
-        """Stack k last frames. Adapted from baselines.common.atari_wrappers
+        """
+        Stack k last frames.
+        Adapted from baselines.common.atari_wrappers
         Changed to pre-transpose frames before creating memory-safe lazyframe object
         """
         super().__init__(env)
@@ -224,7 +228,8 @@ class MineRLFrameStack(gym.Wrapper):
 
 
 class OneMovementAction(gym.ActionWrapper):
-    """Split action space into movement & crafting actions. Similar to Hierarchical Deep Q-Network from Imperfect
+    """
+    Split action space into movement & crafting actions. Similar to Hierarchical Deep Q-Network from Imperfect
     Demonstrations in Minecraft paper at https://arxiv.org/pdf/1912.08664.pdf
     """
     def __init__(self, env, craft_keys: List[str]):
@@ -278,7 +283,8 @@ class OneMovementAction(gym.ActionWrapper):
 
 
 class DictClone(gym.ActionWrapper):
-    """Add this after all other action wrappers to ensure action dicts are not modified in replay memory.
+    """
+    Add this after all other action wrappers to ensure action dicts are not modified in replay memory.
     Makes copying actions unnecessary. Also ensures specific order to actions.
     """
     def __init__(self, env):

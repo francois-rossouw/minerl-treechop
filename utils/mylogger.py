@@ -65,7 +65,8 @@ class Logger:
         self.dw = DataWriter(args)
 
     def init_tracker(self, **kwargs):
-        """Initializes instance to values given in kwargs. Starts timer and accounts for continued runs if given a
+        """
+        Initializes instance to values given in kwargs. Starts timer and accounts for continued runs if given a
         'duration' key.
         :param kwargs:
         :return: None
@@ -106,7 +107,8 @@ class Logger:
             self.loss.append(float(loss))
 
     def finish_episode(self, verbose):
-        """Update parameters and print current progress
+        """
+        Update parameters and print current progress
         :param verbose: Print current progress
         :return: None
         """

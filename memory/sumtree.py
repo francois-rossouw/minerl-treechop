@@ -3,7 +3,8 @@ import numpy as np
 
 
 class SegmentTree:
-    """Segment tree using a linear numpy array. Works well with batch updates.
+    """
+    Segment tree using a linear numpy array. Works well with batch updates.
     Can be subclassed to create other trees based on operations for example a sumtree.
     """
     def __init__(self, size, operation):
@@ -38,7 +39,8 @@ class SegmentTree:
         return self.size == self.entries
 
     def _update(self, idx, priority) -> None:
-        """Update priority at given index
+        """
+        Update priority at given index
         :param idx: index to replace priority
         :param priority: priority value
         :return: None
@@ -50,7 +52,8 @@ class SegmentTree:
             i >>= 1
 
     def _batch_update(self, vals: np.ndarray) -> None:
-        """Update memory in a vectorised manner.
+        """
+        Update memory in a vectorised manner.
         :param vals: new priorities
         :return: None
         """
@@ -103,7 +106,8 @@ class SumTree(SegmentTree):
         return idx, self.tree[idx]
 
     def sample_low(self, eps=0.0001) -> int:
-        """Samples an index based on reverse priority.
+        """
+        Samples an index based on reverse priority.
         :param eps: small value to ensure a valid prob
         :return int: index of priority to replace
         """
@@ -113,7 +117,7 @@ class SumTree(SegmentTree):
         return idx
 
     def prioritized_sample(self, n):
-        """Sample n samples from memory with prioritisation"""
+        """Sample n samples from memory with prioritisation."""
         assert not self.sample_taken
         self.sample_taken = True
         self.idxs = []
@@ -138,7 +142,8 @@ class SumTree(SegmentTree):
         self._batch_update(weights)
 
     def append(self, idx, priority=None) -> None:
-        """Append probability to sumtree. If sumtree is is_full of data, replace at oldest item.
+        """
+        Append probability to sumtree. If sumtree is is_full of data, replace at oldest item.
         :param idx: index to append at
         :param priority: sample priority
         :return: None
