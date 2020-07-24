@@ -22,11 +22,8 @@ class ReplayBufferAbstract(ABC):
         pass
 
     @abstractmethod
-    def append(self, state: Union[LazyFrames, Tuple[LazyFrames, np.ndarray]] = None,
-               action: Union[np.ndarray, int] = None, reward: int = 0, done: bool = False,
-               next_state: Union[LazyFrames, Tuple[LazyFrames, np.ndarray]] = None,
-               skip_step: int = 0, p_idx: int = 0, prob=None, expert: bool = False,
-               **kwargs):
+    def append(self, state=None, action=None, reward=0, done=False, next_state=None,
+               skip_step=0, p_idx=0, prob=None, expert=False, **kwargs):
         pass
 
     @abstractmethod
