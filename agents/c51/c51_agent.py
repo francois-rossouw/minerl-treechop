@@ -13,7 +13,15 @@ from utils.mylogger import Logger
 
 class C51(DQN):
     def __init__(self, args: Arguments, logger: Logger, action_space, observation_space, p_idx=0, **kwargs):
+        """
+        C51 agent extended from DQN agent class
+        :param args: all default arguments. Can be changed in cmd line
+        :param logger: logging object
+        :param action_space: action space of gym env
+        :return: self
+        """
         super(C51, self).__init__(args, logger, action_space, observation_space, p_idx, **kwargs)
+
         self.arch = "C51"
         if args.double_dqn:
             self.arch = f"Double{self.arch}"
@@ -35,35 +43,6 @@ class C51(DQN):
         self.v_max = args.v_max
         self.support_atoms = torch.linspace(args.v_min, args.v_max, args.atoms).to(self.device)
         self.delta_z = (args.v_max - args.v_min) / (args.atoms - 1)
-
-    # noinspection PyUnresolvedReferences
-    # def _create_models(self, args, n_actions, observation_space, model_cls: Type[C51Model]):
-    #     in_ch, in_w, in_h = observation_space.shape
-    #     in_shape = (in_ch, in_w, in_h)
-    #     other_shape = 0
-    #     if isinstance(self.observation_space, TupleSpace):
-    #         other_shape = self.observation_space.other_shape[0]
-    #
-    #     # Models
-    #     self.online_net = C51Model(
-    #         args, n_actions, in_ch, in_shape, cat_in_features=other_shape
-    #     ).to(self.device)
-    #     self.online_net.train()
-    #     # self.online_net.apply(init_weights)
-    #
-    #     self.target_net = C51Model(
-    #         args, n_actions, in_ch, in_shape, cat_in_features=other_shape
-    #     ).to(self.device)
-    #     self.target_net.eval()
-    #     self.update_target_net(step=-1, tau=1.0)
-    #     for param in self.target_net.parameters():
-    #         param.requires_grad = False
-    #
-    #     # Optimizer
-    #     optim_cls = optim.AdamW if args.lambda3 > 0 else optim.Adam
-    #     self.optimizer = optim_cls(params=self.online_net.parameters(), lr=args.lr, weight_decay=args.lambda3)
-    #     if self.test or self.resume:
-    #         self.load(args)
 
     def exploit(self, obs) -> int:
         with torch.no_grad():

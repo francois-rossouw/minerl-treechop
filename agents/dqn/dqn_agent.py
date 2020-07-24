@@ -24,6 +24,13 @@ from utils.minerl_wrappers import TupleSpace
 
 class DQN(AgentAbstract):
     def __init__(self, args: Arguments, logger: Logger, action_space, observation_space, p_idx=0, **kwargs):
+        """
+        Main DQN agent class
+        :param args: all default arguments. Can be changed in cmd line
+        :param logger: logging object
+        :param action_space: action space of gym env
+        :return: self
+        """
         self.p_idx = p_idx
         self.arch = "DQN"
         if args.double_dqn:
@@ -96,7 +103,6 @@ class DQN(AgentAbstract):
             args, n_actions, in_ch, in_shape, cat_in_features=other_shape
         ).to(self.device)
         self.online_net.train()
-        # self.online_net.apply(init_weights)
 
         self.target_net = model_cls(
             args, n_actions, in_ch, in_shape, cat_in_features=other_shape
