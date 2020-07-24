@@ -34,6 +34,11 @@ class CraftingRollout:
 
 
 class ExpertDataset(Dataset):
+    """
+    Custom dataset loader for MineRL human recorded data. Fixes some errors in the obtain envs for example
+    crafting multiple items in a single step (something which an agent can't do).
+    Largely adapted from MineRL's own data loader.
+    """
     def __init__(self, data_dir, skip_failures=True, frame_skip=4, alternate_data: str = None):
         self.frame_skip = frame_skip
         if 'Dense' in data_dir:

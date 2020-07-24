@@ -6,20 +6,10 @@ from typing import Union, List, Dict, Tuple
 from utils.wrappers import LazyFrames
 
 
-# def reward_discount(sample: List[Dict], gamma=0.99):
-#     if "discounted_reward" in sample[0]:
-#         return sample[0]["discounted_reward"]
-#     rewards = np.array([step["reward"] for step in sample])
-#     reversed_rew = list(reversed(rewards))
-#     for i in range(1, len(sample)):
-#         if reversed_rew[i] == 0 and reversed_rew[i-1] > 0:
-#             reversed_rew[i] = reversed_rew[i-1] * gamma
-#     discounted_reward = sum(reversed_rew)
-#     sample[0]["discounted_reward"] = discounted_reward
-#     return discounted_reward
-
-
 def reward_discount(sample: List[Dict], gamma=0.99):
+    """
+    Reward discounting for multi-step DQN
+    """
     if "discounted_reward" in sample[0]:
         return sample[0]["discounted_reward"]
     discounted_reward = sum([step["reward"] * gamma**idx for idx, step in enumerate(sample)])
@@ -28,6 +18,9 @@ def reward_discount(sample: List[Dict], gamma=0.99):
 
 
 class ReplayBufferAbstract(ABC):
+    """
+    Abstract class for replay buffer
+    """
     demo_samples: int
 
     @abstractmethod
@@ -80,19 +73,11 @@ class ExperienceSamples:
 
     @property
     def next_states(self):
-        # return [
-        #     np.asarray(sample[1]["state"]) if len(sample) >= 2 else
-        #     np.zeros_like(self._states[0]) for sample in self.samples
-        # ]
         for sample in self.samples:
             yield np.asarray(sample[1]["state"]) if len(sample) >= 2 else self._empty_state
 
     @property
     def nth_states(self):
-        # return [
-        #     np.asarray(sample[-1]["state"]) if len(sample) >= self.n_step else
-        #     np.zeros_like(self._states[0]) for sample in self.samples
-        # ]
         for sample in self.samples:
             yield np.asarray(sample[1]["state"]) if len(sample) >= self.n_step else self._empty_state
 

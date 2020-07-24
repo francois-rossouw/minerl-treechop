@@ -24,7 +24,7 @@ def totensor(obs: Union[List[Union[np.ndarray, MyLazyFrames]], np.ndarray, MyLaz
     Output will be ready for use in PyTorch NN:
     Tensor, Tensor, Stacked Tensor, Tuple of stacked tensors
     :param obs: Data to be made to tensor
-    :param device:
+    :param device: Device of network. If CUDA, speeds up conversion to float + division
     :return:
     """
     if isinstance(obs, MyLazyFrames):
@@ -36,15 +36,8 @@ def totensor(obs: Union[List[Union[np.ndarray, MyLazyFrames]], np.ndarray, MyLaz
             print(obs)
             return torch.tensor(obs, dtype=torch.float)
     if isinstance(obs, (List, Generator)):
-        # if isinstance(obs[0], Tuple):  # List of Tuples -> Tuple of Lists
-        #     return tuple(
-        #         totensor(item) for item in zip(*obs)
-        #     )
-        # else:
         obs = np.array([np.array(ob) for ob in obs])
         return torch.from_numpy(obs).to(device).float().div(255)
-    # if isinstance(obs, tuple):
-    #     return tuple(totensor(ob) for ob in obs)
 
 
 def soft_update(online: nn.Module, target: nn.Module, tau: float = 1e-2):
@@ -120,22 +113,12 @@ class StackSet:
 
 
 if __name__ == '__main__':
-    # s = StackSet(range(20))
-    # ir_prob = 0.2
-    # for i in range(100):
-    #     if np.random.rand() < ir_prob:
-    #         r_idx = np.random.choice(list(s.stack))
-    #         s.pop(val=r_idx)
-    #     else:
-    #         s.pop()
-    #     print(s.stack)
-
-    import copy
-    test_tup = MyLazyFrames(list([np.zeros(shape=(64, 64, 1)) for _ in range(4)])), np.zeros(shape=(19,))
-    test_input = [copy.copy(test_tup) for _ in range(16)]
-    test_out = totensor(test_input, device=torch.device("cuda:0"))
-    frames, invs = test_out
-    print(frames.shape)
-    print(frames.device)
-    print(invs.shape)
-    print(invs.device)
+    s = StackSet(range(20))
+    ir_prob = 0.2
+    for i in range(100):
+        if np.random.rand() < ir_prob:
+            r_idx = np.random.choice(list(s.stack))
+            s.pop(val=r_idx)
+        else:
+            s.pop()
+        print(s.stack)

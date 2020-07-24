@@ -31,8 +31,8 @@ class Arguments(Tap):
     ] = 'MineRLTreechop-v0'
 
     # Weights & Biases args
-    log_run: bool = False
-    local_log: bool = False
+    log_run: bool = False  # Log with wandb
+    local_log: bool = False  # Log locally in csv files
 
     # Training arguments
     batch_size: int = 32  # Batch size of offline training
@@ -50,9 +50,9 @@ class Arguments(Tap):
     fix_seed: bool = False  # Fix seed for all runs
     replay_frequency: int = 4  # How often to run offline training (every N steps)
     learn_start: int = 50000  # How many steps to observe agent training
-    frame_skip: int = 4
-    frame_stack: int = 4
-    batch_accumulator: str = 'mean'
+    frame_skip: int = 4  # Number of frames to skip per step
+    frame_stack: int = 4  # Number of frames to stack
+    batch_accumulator: str = 'mean'  # How to accumulate a batch of losses sum or mean
 
     # Deep learning arguments
     lr: float = 0.0001  # Learning rate of deep learning
@@ -74,7 +74,6 @@ class Arguments(Tap):
 
     # Prioritized experience replay
     no_prioritized: bool = False  # Don't use Prioritized Experience Replay
-    ir_prob: float = 0.0
 
     # e-greedy
     greedy: bool = False  # Act only greedy (Use either this or noisy or both, otherwise no exploration)
@@ -86,10 +85,10 @@ class Arguments(Tap):
     noise_std: float = 0.5  # Standard noise value (not implemented)
 
     # C51
-    use_c51: bool = False
-    atoms: int = 51
-    v_min: float = 0.0
-    v_max: float = 50.0
+    use_c51: bool = False  # Activate C51 algo
+    atoms: int = 51  # Number of atoms to use, recommended to stick to 51
+    v_min: float = 0.0  # Minimum reward for C51 (clips lower values)
+    v_max: float = 50.0  # Maximum reward for C51 (clips higher values)
 
     # Automatically initiated variables
     double_dqn: bool = None
@@ -100,7 +99,7 @@ class Arguments(Tap):
     #                                               MineRL specific                                                    #
     ####################################################################################################################
     # Action branching
-    no_action_branching: bool = False
+    no_action_branching: bool = False  # Deactivate action branching
 
     # DQfD
     lambda0: float = 1.0  # Lambda 0 for J1.
@@ -109,17 +108,17 @@ class Arguments(Tap):
     lambda3: float = 1e-5  # Lambda 0 for JL2.
     bonus_priority_agent: float = 0.001  # Bonus priority for agent observations.
     bonus_priority_demo: float = 1.0  # Bonus priority for demo observations.
-    dqfd_loss: bool = False
-    skip_pretrain: bool = False
-    pretrain_steps: int = 80000
+    dqfd_loss: bool = False  # Use DQfD loss (Jdq + Jn + Je + Jl2)
+    skip_pretrain: bool = False  # For skipping pre-training
+    pretrain_steps: int = 80000  # Batches to pre-train for
     margin_loss: float = 0.4  # Margin loss value.
     expert_fraction: float = 0.3  # Fraction of memory capacity dedicated to expert observations.
-    pretrain_batch_size: int = 128
+    pretrain_batch_size: int = 128  # Batch size when pre-training
 
     # ForgER
-    use_forget: bool = False
-    forget_min: float = 0.5  # Minimum experts to use
-    forget_final_step: int = 250000
+    use_forget: bool = False  # Control the decrease in expert data usage per batch
+    forget_min: float = 0.5  # Minimum expert data to use in a batch
+    forget_final_step: int = 250000  # Final step to settle on min forget %
 
     # Automatically initiated variables
     bins = None

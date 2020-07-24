@@ -5,7 +5,7 @@ typing_extensions==3.7.4.1
 pandas==1.0.3
 gym==0.13.1
 argcomplete==1.11.1
-# torch==1.5.0  # Installed with anaconda
+# torch==1.5.0  # Install with anaconda
 tqdm==4.41.1
 ttictoc==0.4.1
 typed_argument_parser==1.4

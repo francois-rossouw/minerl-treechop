@@ -8,6 +8,12 @@ from utils.wrappers import LazyFrames
 
 
 class DemoReplayBuffer(ReplayBufferAbstract):
+    """
+    Replay buffer that keeps 2 separate buffers. One for expert data and another for data obtained by the agent.
+    It appends to both and can sample from both.
+    Adapted from the demo memory Preferred Networks baselines implementation:
+    https://github.com/minerllabs/baselines/blob/master/general/chainerrl/baselines/dqfd.py
+    """
     def __init__(
             self, prioritized: bool, capacity, demo_capacity, n_step, eps=0.01, alpha=0.6, beta0=0.4,
             betasteps=1000, gamma=0.99, ir_prob=0.2, n_policies=1, bonus_priority_demo=1.0,
@@ -34,6 +40,7 @@ class DemoReplayBuffer(ReplayBufferAbstract):
         self.bonus_priority_agent = bonus_priority_agent
 
     def set_pretrain_phase(self, pretraining: bool):
+        # In this phase, expert data can also be added to the non-expert memory.
         self.pretrain_phase = pretraining
 
     def append(self, state: Union[LazyFrames, Tuple[LazyFrames, np.ndarray]] = None,
@@ -48,11 +55,11 @@ class DemoReplayBuffer(ReplayBufferAbstract):
                       skip_step=skip_step, p_idx=p_idx, prob=prob, expert=expert, **kwargs)
 
     def _sample_from_memory(self, nsample_agent, nsample_demo, p_idx):
-        """Samples experiences from memory
-        Args:
-            nsample_agent (int): Number of RL transitions to sample
-            nsample_demo (int): Number of demonstration transitions to sample
-            p_idx (int): Index of priorities.
+        """
+        Samples experiences from memory
+        :param nsample_agent: Number of RL transitions to sample
+        :param nsample_demo: Number of demonstration transitions to sample
+        :param p_idx: Index of priorities.
         """
         if nsample_demo > 0:
             sampled_demo, is_weight_demo = self.demo_memory.sample(
@@ -73,12 +80,12 @@ class DemoReplayBuffer(ReplayBufferAbstract):
         return sampled_demo, is_weight_demo
 
     def sample(self, n, demo_fraction=None, p_idx=0) -> Tuple[ExperienceSamples, np.ndarray]:
-        """Sample `n` experiences from memory.
-                Args:
-                    n (int): Number of experiences to sample
-                    demo_fraction (float): Fraction of experiences to come from demo memory. If set will override 50/50
-                    p_idx (int): Index of priorities.
-                """
+        """
+        Sample n experiences from memory.
+        :param n: Number of experiences to sample
+        :param demo_fraction: Fraction of experiences to come from demo memory. If set will override 50/50
+        :param p_idx: Index of priorities.
+        """
         if demo_fraction == 1.0 or len(self.agent_memory) == 0:  # Demo only
             samples, is_weight = self._sample_from_memory(
                 nsample_agent=0, nsample_demo=n, p_idx=p_idx)
@@ -112,6 +119,9 @@ class DemoReplayBuffer(ReplayBufferAbstract):
         return samples, is_weight
 
     def update_priorities(self, errors, p_idx=0):
+        """
+        Update sumtree priorities
+        """
         errors[:self.demo_samples] += self.bonus_priority_demo
         errors[-self.agent_samples:] += self.bonus_priority_agent
         errors = errors / errors.max()
@@ -126,6 +136,9 @@ class DemoReplayBuffer(ReplayBufferAbstract):
         return len(self.demo_memory) + len(self.agent_memory)
 
     def stop_current_episode(self, env_id=0, p_idx=0):
+        """
+        Manual end to an episode
+        """
         if self.pretrain_phase:
             memory = self.demo_memory if not self.demo_memory.is_full else self.agent_memory
         else:
@@ -134,6 +147,9 @@ class DemoReplayBuffer(ReplayBufferAbstract):
         memory.add_transition(last_n_transitions, done=True, p_idx=p_idx)
 
     def clear_transition_buffers(self):
+        """
+        Manually ensure all
+        """
         for memory in [self.demo_memory, self.agent_memory]:
             for val in memory.last_n_transitions.values():
                 val.clear()

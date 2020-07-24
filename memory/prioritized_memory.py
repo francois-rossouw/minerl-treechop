@@ -10,6 +10,10 @@ from utils.wrappers import LazyFrames
 
 
 class PrioritizedExperienceBuffer(UniformExperienceBuffer):
+    """
+    Prioritised replay buffer. Inspired by
+    https://github.com/chainer/chainerrl/blob/master/chainerrl/replay_buffers/prioritized.py
+    """
     def __init__(self, capacity, n_step, eps=0.01, alpha=0.6, beta0=0.4,
                  betasteps=1000, gamma=0.99, ir_prob=0.2, n_policies=1, normalize_by_max=True, **kwargs):
         super(PrioritizedExperienceBuffer, self).__init__(capacity, n_step, gamma, **kwargs)
@@ -31,7 +35,6 @@ class PrioritizedExperienceBuffer(UniformExperienceBuffer):
             next_state: Union[LazyFrames, Tuple[LazyFrames, np.ndarray]] = None,
             skip_step: int = 0, p_idx: int = 0, prob=None, expert: bool = False,
             **kwargs) -> None:
-        # transition_id = 4 * p_idx + skip_step
         transition_id = skip_step
         last_n_transitions = self.last_n_transitions[transition_id]
         last_n_transitions.append(dict(
@@ -79,7 +82,10 @@ class PrioritizedExperienceBuffer(UniformExperienceBuffer):
 
     def _priority_from_errors(self, errors: np.ndarray):
         if self.normalize_by_max:
-            # Not in paper, but might help to keep td errors manageable.
+            # Not in paper, but might help to keep td errors reasonable.
+            # A big downside is that we squeeze the errors between 0 and 1 relative to each batch.
+            # i.e. one batch may have a max error of 3, and another batch a max of 2.
+            # These errors are considered to be equal after normalisation.
             errors = errors.clip(0.0) / errors.max()
         return np.power(errors + self.eps, self.alpha)
 

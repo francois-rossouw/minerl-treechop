@@ -14,8 +14,11 @@ from memory import PrioritizedExperienceBuffer, UniformExperienceBuffer, DemoRep
 
 
 def main_train(args: Arguments):
+    # Main training fn
     minerl_env: bool = 'MineRL' in args.env_name
     seed_things(args.seed)
+
+    # Logging things
     logger = Logger(args.log_run)
     if args.log_run:
         generate_wandb(args)
@@ -41,8 +44,8 @@ def main_train(args: Arguments):
         logger.epsilon = args.epsilon_final
 
     memory = None
-    if not args.test:
-        mem_cls = get_memory_cls(args)
+    if not args.test:  # Fill memory and pre-train before making env if not testing.
+        mem_cls = get_memory_cls()
         betasteps = (args.pretrain_steps + args.train_steps // 10) / args.replay_frequency
         expert_capacity = int(args.memory_capacity * args.expert_fraction)
         memory_capacity = args.memory_capacity - expert_capacity
@@ -52,7 +55,6 @@ def main_train(args: Arguments):
             n_step=args.n_step,
             betasteps=betasteps,
             gamma=args.gamma,
-            ir_prob=args.ir_prob,
             prioritized=args.prioritized,
             bonus_priority_demo=args.bonus_priority_demo,
             bonus_priority_agent=args.bonus_priority_agent
@@ -78,6 +80,7 @@ def main_train(args: Arguments):
 
 
 def get_env_spaces(args: Arguments):
+    # Create an return observation- and action spaces
     minerl_env: bool = 'MineRL' in args.env_name
     env_spec = gym.envs.registry.spec(args.env_name)
     observation_space = env_spec._kwargs['observation_space']  # Private variable contains what we need
@@ -89,17 +92,12 @@ def get_env_spaces(args: Arguments):
     return observation_space, action_space, pretrain_action_space
 
 
-def get_memory_cls(args: Arguments) -> Type[DemoReplayBuffer]:
-    # Type[Union[PrioritizedExperienceBuffer, UniformExperienceBuffer, DemoReplayBuffer]]:
+def get_memory_cls() -> Type[DemoReplayBuffer]:
     return DemoReplayBuffer
-    # if not args.skip_pretrain:
-    # if args.prioritized:
-    #     return PrioritizedExperienceBuffer
-    # else:
-    #     return UniformExperienceBuffer
 
 
 def get_agent_cls(args: Arguments) -> Type[DQN]:
+    # Select agent class
     if args.use_c51:
         return C51
     else:
@@ -107,6 +105,7 @@ def get_agent_cls(args: Arguments) -> Type[DQN]:
 
 
 def generate_wandb(args: Arguments):
+    # Make wandb project with tags
     tags = []
     if args.double_dqn:
         tags.append("double-dqn")
@@ -132,32 +131,14 @@ def generate_wandb(args: Arguments):
 
 
 def set_def_rainbow(args: Arguments):
+    # Default args to use rainbow (no noisy networks)
     args.use_c51 = True
-    # args.noisy = True
     args.greedy = True
-    # args.verbosity = 0
-    # args.log_run = True
     args.n_step = 10
-    # args.lambda0 = 0.5
-    # args.lambda1 = 0.5
     args.dqfd_loss = True
-    # args.fix_seed = True
-
-
-def _project_profile_settings(args: Arguments):
-    args.pretrain_steps = 8000
-    args.train_steps = 20000
-    args.verbosity = 1
 
 
 if __name__ == '__main__':
-    # args = Arguments(underscores_to_dashes=True).parse_args(known_only=False)
-    # main_train(args)
-
-    ####################################################################################################################
-    #                                           FOR RUNNING SWEEP                                                      #
-    ####################################################################################################################
     args = Arguments(underscores_to_dashes=True).parse_args(known_only=False)
     set_def_rainbow(args)
-    # _project_profile_settings(args)
     main_train(args)

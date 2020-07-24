@@ -3,6 +3,10 @@ import numpy as np
 
 
 class SegmentTree:
+    """
+    Segment tree using a linear numpy array. Works well with batch updates.
+    Can be subclassed to create other trees based on operations for example a sumtree.
+    """
     def __init__(self, size, operation):
         assert size % 2 == 0, f"Only works with even size."
         self.neutral_value = 0
@@ -113,6 +117,9 @@ class SumTree(SegmentTree):
         return idx
 
     def prioritized_sample(self, n):
+        """
+        Sample n samples from memory with prioritisation
+        """
         assert not self.sample_taken
         self.sample_taken = True
         self.idxs = []
@@ -131,21 +138,18 @@ class SumTree(SegmentTree):
         return self.idxs - zero_idx, sampling_probabilities
 
     def update_weights(self, weights):
+        """
+        Update weights by batch. Reduces complexity from O(k log N) to O(log N) since we work with vectors.
+        """
         self._set_minmax(weights.max(), weights.min())
         self.sample_taken = False
         self._batch_update(weights)
 
-    def append(self, idx, priority=None, scale=1) -> None:
+    def append(self, idx, priority=None) -> None:
         """
-        Append probability to sumtree. If sumtree is is_full of data, replace at oldest item. If ir_prior > 0, replace
-        lowest score with that probability. This is only done if replacement is necessary.
-        i.e: {
-            if random_uniform < ir_prior: replace low score
-            else replace oldest
-        }
+        Append probability to sumtree. If sumtree is is_full of data, replace at oldest item.
         :param idx: index to append at
         :param priority: sample priority
-        :param scale:
         :return: None
         """
         if priority is not None:
@@ -153,29 +157,36 @@ class SumTree(SegmentTree):
         else:
             priority = self.max_priority
 
-        self._update(idx, priority*scale)
+        self._update(idx, priority)
         self.entries = min(self.entries + 1, self.size)
 
 
 if __name__ == '__main__':
     from collections import Counter
     import random
-    size = 12
-    a = np.linspace(start=0, stop=1, endpoint=True, num=size)
+    from pprint import pprint
+
+    size = 128
+    a = np.linspace(start=0, stop=1, endpoint=False, num=size)
+    a += a[1]
     sumtree = SumTree(len(a))
     sumtree.build(a)
     print(sumtree.tree)
     print(sumtree.tree[-sumtree.size:])
     dic = dict()
 
+    print(f"\nSAMPLING")
+    print(f"{'-'*50}")
     n_samples = 100000
+    batch_size = 4
     for _ in range(n_samples):
-        idx = sumtree.sample_low()
-        prior = sumtree.tree[idx + (sumtree.size - 1)]
+        idxs, _ = sumtree.prioritized_sample(batch_size)
+        priors = a[idxs]
+        sumtree.update_weights(priors)
+        for prior in priors:
+            if prior in dic:
+                dic[prior] += 100/n_samples
+            else:
+                dic[prior] = 100/n_samples
 
-        if prior in dic:
-            dic[prior] += 100/n_samples
-        else:
-            dic[prior] = 100/n_samples
-
-    print(Counter(dic))
+    pprint(Counter(dic))

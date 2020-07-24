@@ -17,18 +17,22 @@ from utils.wrappers import LazyFrames
 
 
 class CamDiscrete(gym.spaces.Discrete):
+    """
+    New space for camera actions.
+    Simply changes no_op actions to map to no camera movement
+    """
     def __init__(self, n):
         super(CamDiscrete, self).__init__(n)
         self.zero_idx = math.floor(n/2)
-
-    def sample(self, *args, **kwargs):
-        return super().sample()
 
     def no_op(self, *args, **kwargs):
         return self.zero_idx
 
 
 class TupleSpace(gym.Space):
+    """
+    Space to change dict observation space of minerl to a tuple. Default shape is from first space.
+    """
     def __init__(self, spaces: Tuple[gym.Space, gym.Space]):
         self.spaces = spaces
         for space in spaces:
@@ -85,6 +89,10 @@ class PoVWrapper(gym.ObservationWrapper):
 
 
 class PoVInvWrapper(gym.ObservationWrapper):
+    """
+    Uses TupleSpace above to change observation space of minerl env from dict to tuple
+    Also appends mainhand item to inventory
+    """
     def __init__(self, env):
         super().__init__(env)
         self.observation_space = PoVWrapper.pov_obs_wrapper(env.observation_space)
@@ -96,15 +104,14 @@ class PoVInvWrapper(gym.ObservationWrapper):
 
     def observation(self, obs):
         inv = np.stack(list(obs['inventory'].values()))
-        mainhand = obs['equipped_items']['mainhand']['type']
+        mainhand = obs['equipped_items.mainhand.type']
         inv = np.concatenate(([mainhand if not isinstance(mainhand, str) else 8], inv))
         return obs['pov'], inv
 
 
 class ContToDiscActions(gym.ActionWrapper):
-    """Convert MineRL env's `Dict` action space as a serial discrete action space.
-    The term "serial" means that this wrapper can only push one key at each step.
-    "attack" action will be alwarys triggered.
+    """
+    Convert continuous actions to discrete actions with a list of bins (specifically the camera)
     """
     def __init__(self, env, bins: list):
         super().__init__(env)
@@ -160,37 +167,11 @@ class ExcludeActions(gym.ActionWrapper):
         return self.ex_action
 
 
-class AlwaysActions(gym.ActionWrapper):
-    """Convert MineRL env's `Dict` action space as a serial discrete action space.
-    The term "serial" means that this wrapper can only push one key at each step.
-    "attack" action will be alwarys triggered.
-    """
-    def __init__(self, env, always_actions: List[str] = None):
-        super().__init__(env)
-        self.ex_action = self.env.action_space.no_op()
-        for key in self.ex_action:
-            if key in always_actions:
-                self.ex_action[key] = 1
-        self.action_space = AlwaysActions.wrap_action_space(self.env.action_space, always_actions)
-
-    @staticmethod
-    def wrap_action_space(action_space: spaces.Dict, always_actions: List[str]):
-        wrapping_action_space = copy.deepcopy(action_space.spaces)
-
-        if always_actions:
-            for key in always_actions:
-                wrapping_action_space.pop(key)
-
-        return spaces.Dict(wrapping_action_space)
-
-    def action(self, action):
-        self.ex_action.update(action)
-        return self.ex_action
-
-
 class MineRLFrameSkip(gym.Wrapper):
-    """Return every `skip`-th frame and repeat given action during skip.
+    """
+    Return every `skip`-th frame and repeat given action during skip.
     Note that this wrapper does not "maximize" over the skipped _frames.
+    The stepping function also ensures that a crafting action provided by the agent is only used once.
     """
     def __init__(self, env, craft_acts, skip=4):
         super().__init__(env)
@@ -215,12 +196,10 @@ class MineRLFrameSkip(gym.Wrapper):
 class MineRLFrameStack(gym.Wrapper):
     def __init__(self, env, k, obtain_env: bool = True):
         """Stack k last frames.
-        Returns lazy array, which is much more memory efficient.
-        See Also
-        --------
-        baselines.common.atari_wrappers.LazyFrames
+        Adapted from baselines.common.atari_wrappers
+        Changed to pre-transpose frames before creating memory-safe lazyframe object
         """
-        gym.Wrapper.__init__(self, env)
+        super().__init__(env)
         self.k = k
         self.frames = deque([], maxlen=k)
         self.invs = deque([], maxlen=k)
@@ -331,13 +310,13 @@ class DictClone(gym.ActionWrapper):
 
 
 class MyLazyFrames(LazyFrames):
+    """Small adaptation for nearly 4x speedup. Need to transpose frames before this."""
     def __init__(self, frames, out_shape: list):
         super(MyLazyFrames, self).__init__(frames)
-        """Small adaptation for nearly 4x speedup. Need to transpose frames before this."""
         self._out_shape = out_shape
 
     def _force(self):
-        return np.array(self._frames).reshape(self._out_shape)  # .transpose((0, 3, 1, 2))
+        return np.array(self._frames).reshape(self._out_shape)
 
     def __len__(self):
         return len(self._frames)
@@ -353,15 +332,17 @@ class MyLazyFrames(LazyFrames):
 
 
 class LazyFramesFlipped(MyLazyFrames):
+    """
+    Useful extension to lazyframes that allows for the flipping of existing frames without storing twice.
+    """
     def _force(self):
         out = super()._force()
         return np.flip(out, axis=2).copy()
 
 
 class LogRewardData(gym.Wrapper):
-    """Take first return value.
-    minerl's `env.reset()` returns tuple of `(obs, info)`
-    but existing agents implementations expect `reset()` returns `obs` only.
+    """
+    Logs reward data to allow user to view what the agent has achieved.
     """
     def __init__(self, env, episode=0):
         super().__init__(env)
@@ -478,7 +459,6 @@ def make_minerl_env(env_id, args: Arguments):
     env = ExcludeActions(env, excluded_actions=args.exclude_actions)
     env = ContToDiscActions(env, args.bins)
     if not args.action_branching:
-        env = AlwaysActions(env, always_actions=['attack'])
         env = OneMovementAction(env, args.crafting_actions)
     env = DictClone(env)  # Ensures we do not modify stored action dicts
     return env
@@ -505,13 +485,11 @@ def wrap_minerl_action_space(args: Arguments, action_space: spaces.Dict):
     action_space.spaces.move_to_end('camera_1')
     pretrain_act_space = copy.deepcopy(action_space)
     if not args.action_branching:
-        action_space = AlwaysActions.wrap_action_space(action_space, ['attack'])
-        pretrain_act_space = AlwaysActions.wrap_action_space(pretrain_act_space, ['attack'])
         action_space = OneMovementAction.wrap_action_space(action_space, craft_keys=args.crafting_actions)
     return action_space, pretrain_act_space
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # Small tests
     args = Arguments(underscores_to_dashes=False).parse_args(known_only=False)
     env_spec = gym.envs.registry.spec(args.env_name)
     observation_space = env_spec._kwargs['observation_space']  # Private variable contains what we need

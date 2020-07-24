@@ -1,3 +1,6 @@
+"""
+Default atari wrappers
+"""
 import os
 import numpy as np
 import gym
