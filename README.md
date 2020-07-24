@@ -12,36 +12,22 @@ Environments currently available for training (can't guarantee functionality on 
 
 ## Features
 
-- [x] DQN
-
-- [x] Double DQN (Default is active, disable with `--no-double-dqn`)
-
-- [x] Dueling DQN (Default is active, disable with `--no-dueling`)
-
-- [x] n-step DQN (`--n-step N`, where `N=1` is the normal case)
-
-- [x] Prioritized Experience Replay (Default is active, disable with `--no-prioritized`)
-
-    - [x] Alternate uniform sampling memory (`--no-prioritized`)
-    
-- [x] Noisy Networks for Exploration (`--noisy`, use with `--greedy` for no e-greedy) [[credit](https://github.com/Kaixhin/Rainbow)]
-
-- [x] C51 (`--use-c51`) [[credit](https://github.com/Kaixhin/Rainbow)]
-
-- [x] Continuous -> Discrete
-
-- [x] Action branching (active by default)
-
-  - [ ] No branching option (Not yet fully tested, use with `--no-action-branching`)
-  
-- [x] MineRL Treechop
-
-- [x] DQfD (changed margin loss to cross entropy, seems to work well with C51)
-
-- [x] Logging
-
-    - [x] Enable `wandb` logging (`--log-run`, combine with `--verbosity 0` to avoid large terminal upload.)
-    - [x] Enable local csv logging (`--local-log`, stored in the [runs_recordings](/runs_recordings) dir.)
+-   [x] DQN
+-   [x] Double DQN (Default is active, disable with `--no-double-dqn`)
+-   [x] Dueling DQN (Default is active, disable with `--no-dueling`)
+-   [x] n-step DQN (`--n-step N`, where `N=1` is the normal case)
+-   [x] Prioritized Experience Replay (Default is active, disable with `--no-prioritized`)
+  -   [x] Alternate uniform sampling memory (`--no-prioritized`)
+-   [x] Noisy Networks for Exploration (`--noisy`, use with `--greedy` for no e-greedy) [[credit](https://github.com/Kaixhin/Rainbow)]
+-   [x] C51 (`--use-c51`) [[credit](https://github.com/Kaixhin/Rainbow)]
+-   [x] Continuous -> Discrete
+-   [x] Action branching (active by default)
+  -   [ ] No branching option (Not yet fully tested, use with `--no-action-branching`)
+-   [x] MineRL Treechop
+-   [x] DQfD (changed margin loss to cross entropy, seems to work well with C51)
+-   [x] Logging
+  -   [x] Enable `wandb` logging (`--log-run`, combine with `--verbosity 0` to avoid large terminal upload.)
+  -   [x] Enable local csv logging (`--local-log`, stored in the [runs_recordings](/runs_recordings) dir.)
 
 ## Results
 ![Mean plot](resources/mean_plot_20_ep.png)
