@@ -163,7 +163,6 @@ class SumTree(SegmentTree):
 
 if __name__ == '__main__':
     from collections import Counter
-    import random
     from pprint import pprint
 
     size = 128

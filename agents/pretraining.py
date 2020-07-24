@@ -1,5 +1,3 @@
-import math
-
 from torch.utils.data import DataLoader
 import numpy as np
 from collections import deque
@@ -10,7 +8,6 @@ from collections import Counter
 
 from memory.demo_memory import DemoReplayBuffer
 from memory.dataset_loader import ExpertDataset
-from utils.wrappers import LazyFrames
 from utils.minerl_wrappers import LazyFramesFlipped, MyLazyFrames
 from utils.gen_args import Arguments
 

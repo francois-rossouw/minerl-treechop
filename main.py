@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
 
-from typing import Union, Type
+from typing import Type
 import gym
 import minerl
 import wandb
@@ -10,7 +10,7 @@ import torch
 from agents import DQN, C51, fill_stacked_memory
 from utils import (Arguments, Logger, seed_things, make_env, make_minerl_env,
                    wrap_minerl_obs_space, wrap_minerl_action_space)
-from memory import PrioritizedExperienceBuffer, UniformExperienceBuffer, DemoReplayBuffer
+from memory import DemoReplayBuffer
 
 
 def main_train(args: Arguments):
@@ -45,11 +45,10 @@ def main_train(args: Arguments):
 
     memory = None
     if not args.test:  # Fill memory and pre-train before making env if not testing.
-        mem_cls = get_memory_cls()
         betasteps = (args.pretrain_steps + args.train_steps // 10) / args.replay_frequency
         expert_capacity = int(args.memory_capacity * args.expert_fraction)
         memory_capacity = args.memory_capacity - expert_capacity
-        memory = mem_cls(
+        memory = DemoReplayBuffer(
             capacity=memory_capacity,
             demo_capacity=expert_capacity,
             n_step=args.n_step,
@@ -90,10 +89,6 @@ def get_env_spaces(args: Arguments):
         observation_space = wrap_minerl_obs_space(observation_space)
         action_space, pretrain_action_space = wrap_minerl_action_space(args, action_space)
     return observation_space, action_space, pretrain_action_space
-
-
-def get_memory_cls() -> Type[DemoReplayBuffer]:
-    return DemoReplayBuffer
 
 
 def get_agent_cls(args: Arguments) -> Type[DQN]:

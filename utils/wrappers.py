@@ -184,7 +184,8 @@ class WarpFrame(gym.ObservationWrapper):
 
 class FrameStack(gym.Wrapper):
     def __init__(self, env, k):
-        """Stack k last frames.
+        """
+        Stack k last frames.
         Returns lazy array, which is much more memory efficient.
         See Also
         --------
@@ -216,7 +217,8 @@ class FrameStack(gym.Wrapper):
 
 
 class FrameSkip(gym.Wrapper):
-    """Return every `skip`-th frame and repeat given action during skip.
+    """
+    Return every `skip`-th frame and repeat given action during skip.
     Note that this wrapper does not "maximize" over the skipped _frames.
     """
     def __init__(self, env, skip=4):
@@ -236,11 +238,13 @@ class FrameSkip(gym.Wrapper):
 
 class LazyFrames(object):
     def __init__(self, frames):
-        """This object ensures that common frames between the observations are only stored once.
+        """
+        This object ensures that common frames between the observations are only stored once.
         It exists purely to optimize memory usage which can be huge for DQN's 1M frames replay
         buffers.
         This object should only be converted to numpy array before being passed to the model.
-        You'd not believe how complex the previous solution was."""
+        You'd not believe how complex the previous solution was.
+        """
         self._frames = frames
         self._out = None
 

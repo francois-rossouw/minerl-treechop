@@ -69,9 +69,6 @@ class NoisyLinear(nn.Module):
 
 
 class BasicConv2d(nn.Module):
-    """
-    Simple module to include activation with single line.
-    """
     def __init__(self, in_channels, out_channels, activation=nn.ReLU, **kwargs):
         super(BasicConv2d, self).__init__()
         self.conv = nn.Conv2d(in_channels, out_channels, **kwargs)
@@ -83,9 +80,6 @@ class BasicConv2d(nn.Module):
 
 
 class Flatten(nn.Module):
-    """
-    Pytorch flatten module.
-    """
     def forward(self, x: torch.Tensor):
         return x.reshape(shape=(x.shape[0], -1))
 
@@ -119,7 +113,6 @@ class LinearModel(nn.Module):
 
         # List to keep references to all Noisy layers, used for reset noise
         self._noisy_layers: List[NoisyLinear] = []
-        
         if type(self) == LinearModel:
             self._create_layers(args, in_features)
 

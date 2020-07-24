@@ -195,7 +195,8 @@ class MineRLFrameSkip(gym.Wrapper):
 
 class MineRLFrameStack(gym.Wrapper):
     def __init__(self, env, k, obtain_env: bool = True):
-        """Stack k last frames.
+        """
+        Stack k last frames.
         Adapted from baselines.common.atari_wrappers
         Changed to pre-transpose frames before creating memory-safe lazyframe object
         """

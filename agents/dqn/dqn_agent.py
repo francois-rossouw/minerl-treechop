@@ -134,7 +134,7 @@ class DQN(AgentAbstract):
 
     def play_step(self, env, obs, memory: Union[DemoReplayBuffer, None]):
         action = self.act(obs)
-        n_obs, reward, done, info = env.step(action)
+        n_obs, reward, done, _ = env.step(action)
         self.logger.append_reward(reward)
 
         if not self.test:
@@ -163,7 +163,7 @@ class DQN(AgentAbstract):
         seed_looper = itertools.cycle([args.seed, 21, 24, 28])
         progressbar = tqdm(
             range(args.train_steps),
-            desc=f'Ep: 0',
+            desc='Ep: 0',
             disable=args.verbosity < 1,
             dynamic_ncols=True)
 

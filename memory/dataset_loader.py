@@ -2,15 +2,13 @@ import minerl
 from minerl.herobraine.hero import spaces
 import json
 from torch.utils.data import Dataset
-import sys
 import os
 import numpy as np
 import cv2
 import gym
 from copy import copy
-from collections import OrderedDict, namedtuple, deque
+from collections import OrderedDict, deque
 from dataclasses import dataclass
-from pprint import pprint
 import itertools
 
 
