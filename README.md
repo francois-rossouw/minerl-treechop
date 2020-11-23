@@ -41,6 +41,9 @@ Click [here](https://youtu.be/tdrC33Zkulc) to see a better quality version at 1x
 ## Requirements
 Install with `pip install -r requirements.txt`. Install PyTorch v1.5 separately.
 
+## Testing
+Test trained model included in the [train](/train) dir with `python main.py --test`.
+
 ### Notes
 This project was written for MineRL v2.9 and adapted for version 3.6. However, it still relies on version 1 of the human 
 recorded data provided by the MineRL team.
