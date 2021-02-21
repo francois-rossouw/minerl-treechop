@@ -1,11 +1,16 @@
+import os
 from typing import Union, List, Iterable, Tuple, Generator
 from collections import deque
+import copy
 
 from tqdm import tqdm
 import numpy as np
 import torch
 from torch import nn
+from matplotlib import pyplot as plt
+import matplotlib
 
+from utils.wrappers import LazyFrames
 from utils.minerl_wrappers import MyLazyFrames
 
 
@@ -27,17 +32,22 @@ def totensor(obs: Union[List[Union[np.ndarray, MyLazyFrames]], np.ndarray, MyLaz
     :param device: Device of network. If CUDA, speeds up conversion to float + division
     :return:
     """
-    if isinstance(obs, MyLazyFrames):
+    if isinstance(obs, (MyLazyFrames, LazyFrames)):
         obs = np.asarray(obs)
     if isinstance(obs, np.ndarray):
         if obs.ndim == 3:
             return torch.from_numpy(obs).to(device).float().div(255)
         elif obs.ndim == 1:
-            print(obs)
-            return torch.tensor(obs, dtype=torch.float)
+            return torch.from_numpy(obs).to(device).float()
     if isinstance(obs, (List, Generator)):
         obs = np.array([np.array(ob) for ob in obs])
-        return torch.from_numpy(obs).to(device).float().div(255)
+        obs = torch.from_numpy(obs).to(device).float()
+        if obs.ndim == 4:
+            return obs.div(255)
+        elif obs.ndim == 2:
+            return obs
+        else:
+            raise ValueError(f"Observation input dimensions not supported. Got {obs.ndim}; only support 2 and 4.")
 
 
 def soft_update(online: nn.Module, target: nn.Module, tau: float = 1e-2):
@@ -62,6 +72,36 @@ def seed_things(seed):
         torch.cuda.manual_seed_all(seed)
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+
+
+def generate_saliency_map(tens_in: torch.Tensor, tens_out: torch.Tensor):
+    tens_out.backward()
+    return tens_in.grad.data.abs()
+
+
+def show_saliency_map(in_tens: torch.Tensor, out_tensor: torch.Tensor, name, step, folder):
+    # print(f"In tensor shape: {in_tens.shape}")
+    # print(f"Out tensor shape: {out_tensor.shape}")
+    # exit()
+    in_tens_np = (in_tens[-3:].detach()).clamp(0, 1).cpu().numpy()
+    in_tens_np = np.transpose(in_tens_np, (1, 2, 0)).astype(np.float32)
+
+    x = np.zeros_like(in_tens_np)
+    salient_map = (out_tensor[0].sum(dim=0, keepdim=True).detach()).clamp(0, 1).cpu().numpy()
+    salient_map = np.transpose(salient_map, (1, 2, 0)).astype(np.float32)
+    x[:, :, 0] = salient_map[:, :, 0]
+
+    s_folder = os.path.join(folder, f"step {step}")
+    if not os.path.exists(s_folder):
+        os.mkdir(s_folder)
+    filename = os.path.join(s_folder, name)
+    plt.imshow(in_tens_np)
+    plt.savefig("".join([filename, ".jpg"]), quality=85)
+
+    plt.imshow(in_tens_np)
+    plt.imshow(x, alpha=0.5, cmap=plt.cm.jet)
+
+    plt.savefig("".join([filename, "_heatmap.jpg"]), quality=85)
 
 
 class StackSet:

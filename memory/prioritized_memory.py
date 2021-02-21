@@ -15,7 +15,7 @@ class PrioritizedExperienceBuffer(UniformExperienceBuffer):
     https://github.com/chainer/chainerrl/blob/master/chainerrl/replay_buffers/prioritized.py
     """
     def __init__(self, capacity, n_step, eps=0.01, alpha=0.6, beta0=0.4,
-                 betasteps=1000, gamma=0.99, ir_prob=0.2, n_policies=1, normalize_by_max=True, **kwargs):
+                 betasteps=1000, gamma=0.99, ir_prob=0.0, n_policies=1, normalize_by_max=True, **kwargs):
         super(PrioritizedExperienceBuffer, self).__init__(capacity, n_step, gamma, **kwargs)
         self.eps = eps
         self.alpha = alpha
@@ -70,11 +70,12 @@ class PrioritizedExperienceBuffer(UniformExperienceBuffer):
             del transitions[0]
             self.add_transition(transitions, done, priority, p_idx)
 
-    def sample(self, n, p_idx=0) -> Tuple[ExperienceSamples, np.ndarray]:
+    def sample(self, n, p_idx=0, **kwargs) -> Tuple[ExperienceSamples, np.ndarray]:
         sumtree = self.sumtree[p_idx]
         self.beta0 = min(1., self.beta0 + self.beta_add)
-        idxs, priorities = sumtree.prioritized_sample(n)
-        samples = self.data[idxs].tolist()
+        self.idxs, priorities = sumtree.prioritized_sample(n)
+
+        samples = self.data[self.idxs].tolist()
         samples = ExperienceSamples(samples, n_step=self.n_step, gamma=self.gamma)
         is_weight = np.power(sumtree.entries * priorities, -self.beta0)
         is_weight /= is_weight.max()
@@ -96,7 +97,7 @@ class PrioritizedExperienceBuffer(UniformExperienceBuffer):
 
 
 if __name__ == "__main__":
-    num_elements = 16
+    num_elements = 4
     sample_size = 2
 
     elements = np.arange(num_elements)
@@ -104,16 +105,27 @@ if __name__ == "__main__":
     probabilities = np.linspace(start=1, stop=num_elements, num=num_elements, endpoint=True)
     # probabilities /= np.sum(probabilities)
 
-    memory = PrioritizedExperienceBuffer(num_elements, n_step=1, betasteps=100)
+    memory = PrioritizedExperienceBuffer(num_elements, n_step=1, betasteps=100, normalize_by_max=False)
 
     for ele in probabilities:
-        memory.append()
+        memory.append(prob=ele, reward=ele-1)
     print(memory.sumtree[0].tree)
     with TicToc():
-        for _ in range(10000):
+        for index in range(10):
             data, weights = memory.sample(sample_size)
-            print(weights)
+            print('-'*20)
+            print(f"Weights: {weights}")
+            print(f"Sampled data values: {data.rewards}")
+            print(f"Memory data values: {[int(s[0]['reward']) for s in memory.data]}")
+            print(f"Sumtree idxs (w/ zero_idx): {memory.sumtree[0].idxs}")
+            print(f"Memory idxs (w/o zero_idx): {memory.idxs}")
+            print(f"Sumtree:")
+            memory.sumtree[0].print_tree()
             new_weights = np.random.uniform(low=0.5, size=weights.shape)
             memory.update_priorities(new_weights)
+            print(f"Sumtree leaves:")
+            memory.sumtree[0].print_tree()
+            print('-'*20)
+            memory.append(prob=num_elements+index, reward=num_elements+index)
     print(memory.sumtree[0].tree[:memory.capacity-1])
     print(memory.sumtree[0].tree[-memory.capacity:])

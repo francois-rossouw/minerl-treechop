@@ -4,7 +4,7 @@ import minerl
 import cv2
 from collections import deque
 from gym import spaces
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Tuple
 from collections import OrderedDict
 import copy
 import math
@@ -176,7 +176,7 @@ class WarpFrame(gym.ObservationWrapper):
 
 
 class FrameStack(gym.Wrapper):
-    def __init__(self, env, k):
+    def __init__(self, env, k, ch_first=True):
         """
         Stack k last frames.
         Returns lazy array, which is much more memory efficient.
@@ -186,11 +186,17 @@ class FrameStack(gym.Wrapper):
         """
         gym.Wrapper.__init__(self, env)
         self.k = k
+        self.ch_first = ch_first
         self.frames = deque([], maxlen=k)
         shp = env.observation_space.shape
+        if not ch_first:
+            self.shape = (shp[:-1] + (shp[-1] * k,))
+        else:
+            self.shape = ((shp[-1] * k,) + shp[:-1])
+
         self.observation_space = spaces.Box(
             low=0, high=255,
-            shape=(shp[:-1] + (shp[-1] * k,)),
+            shape=self.shape,
             dtype=env.observation_space.dtype)
 
     def reset(self):
@@ -206,7 +212,7 @@ class FrameStack(gym.Wrapper):
 
     def _get_ob(self):
         assert len(self.frames) == self.k
-        return LazyFrames(list(self.frames))
+        return LazyFrames(list(self.frames), out_shape=self.shape)
 
 
 class FrameSkip(gym.Wrapper):
@@ -230,7 +236,7 @@ class FrameSkip(gym.Wrapper):
 
 
 class LazyFrames(object):
-    def __init__(self, frames):
+    def __init__(self, frames, out_shape: Union[List, Tuple, None] = None):
         """
         This object ensures that common frames between the observations are only stored once.
         It exists purely to optimize memory usage which can be huge for DQN's 1M frames replay
@@ -240,8 +246,11 @@ class LazyFrames(object):
         """
         self._frames = frames
         self._out = None
+        self._out_shape = out_shape
 
     def _force(self):
+        if self._out_shape is not None:
+            return np.concatenate(self._frames, axis=-1).reshape(self._out_shape)
         return np.concatenate(self._frames, axis=-1)
 
     def __array__(self, dtype=None):
@@ -374,7 +383,7 @@ def make_atari(env_id):
     :return: (Gym Environment) the wrapped atari environment
     """
     env = gym.make(env_id)
-    assert 'NoFrameskip' in env.spec.id
+    # assert 'NoFrameskip' in env.spec.id
     env = NoopResetEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
     # env = FrameSkip(env, skip=4)

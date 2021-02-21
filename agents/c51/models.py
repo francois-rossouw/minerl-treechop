@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from gym import spaces
 
 from utils.gen_args import Arguments
-from agents.dqn.models import DQNModel, AdvLayer, BranchingAdvLayer
+from agents.dqn.models import LinearDQNModel, AdvLayer, BranchingAdvLayer, ConvDQNModel
 from agents.common import NoisyLinear
 
 
@@ -50,9 +50,9 @@ class FixedReshape(nn.Module):
         return f"FixedReshape({dim_str})"
 
 
-class C51Model(DQNModel):
-    def __init__(self, args: Arguments, n_actions, in_channels, in_shape, cat_in_features: int = 0):
-        super(C51Model, self).__init__(args, n_actions, in_channels, in_shape, args.atoms, cat_in_features)
+class ConvC51Model(ConvDQNModel):
+    def __init__(self, args: Arguments, n_actions, in_channels, in_shape, cat_in_features: int = 0, **kwargs):
+        super(ConvC51Model, self).__init__(args, n_actions, in_channels, in_shape, args.atoms, cat_in_features)
         self.n_actions = n_actions
         self.atoms = args.atoms
 
@@ -83,19 +83,55 @@ class C51Model(DQNModel):
                 for key, q_val in zip(action_space.spaces.keys(), q_values)
             ])
         else:
-            return int((q_values * support).sum(2).argmax(1).item())
+            return int((q_values[0] * support).sum(2).argmax(1).item())
+
+
+class LinearC51Model(LinearDQNModel):
+    def __init__(self, args: Arguments, n_actions, in_features, cat_in_features: int = 0, **kwargs):
+        super(LinearC51Model, self).__init__(args, n_actions, in_features, args.atoms, cat_in_features)
+        self.n_actions = n_actions
+        self.atoms = args.atoms
+
+        # By just adding automatic reshaping of the advantage & value layer,
+        # we can use parent class forward as is.
+        if self.dueling:
+            self.fc_v = nn.Sequential(
+                *self.fc_v.children(),
+                FixedReshape(1, args.atoms)
+            )
+
+    def _make_adv_layers(self, args: Arguments, n_actions, linear_layer):
+        if not isinstance(n_actions, Iterable):
+            n_actions = [n_actions]
+        self.fc_a = C51BranchingAdvLayer(self._linear_out_size, n_actions, args.atoms, linear_layer)
+        if args.noisy:
+            self._noisy_layers.extend(self.fc_a.get_noisy_layers())
+
+    def forward(self, x: torch.Tensor, ret_func=F.softmax, *args, **kwargs) -> torch.Tensor:
+        return super().forward(x, ret_func=ret_func, *args, **kwargs)
+
+    def get_action(self, x: torch.Tensor, action_space: Union[spaces.Dict, spaces.Discrete],
+                   support: torch.Tensor = None, *args, **kwargs) -> Union[int, OrderedDict]:
+        q_values = self.forward(x, *args, **kwargs)
+        if self.branched_out:
+            return OrderedDict([
+                (key, int((q_val * support).sum(2).argmax(1).item()))
+                for key, q_val in zip(action_space.spaces.keys(), q_values)
+            ])
+        else:
+            return int((q_values[0] * support).sum(2).argmax(1).item())
 
 
 if __name__ == '__main__':
     args = Arguments(underscores_to_dashes=True).parse_args(known_only=True)
     in_shape = (4, 84, 84)
     n_actions = (2, 2, 2, 7, 7)
-    model = DQNModel(args, n_actions, in_shape[0], in_shape)
+    model = LinearDQNModel(args, n_actions, in_shape[0], in_shape)
     print(model)
     inp = torch.zeros((args.batch_size,) + in_shape)
     out = model(inp)
 
-    if isinstance(model, C51Model):
+    if isinstance(model, ConvC51Model):
         if isinstance(n_actions, Iterable):
             for item, acts in zip(out, n_actions):
                 assert item.shape == (args.batch_size, acts, args.atoms)

@@ -1,5 +1,5 @@
 import time
-from statistics import median, mean
+from statistics import mean
 from dataclasses import dataclass
 import numpy as np
 import torch
@@ -40,7 +40,7 @@ class Logger:
     episode: int = 1
     max_score: float = -np.inf
     total_steps: int = 0
-    av_length: int = 30
+    av_length: int = 100
     best_running_score: float = -np.inf
     loss: list = None
     epsilon: float = 1.0
@@ -162,7 +162,7 @@ class Logger:
             f'    experts: {expert_percent}  ',
             f'    epsilon: {self.epsilon:.3f}'
         ])
-        str3 = 'loss: {:.4f}, median reward: {:.1f}, step: {},    best_reward: {},   best_running_reward: {:.3f}'.format(
+        str3 = 'loss: {:.4f}, mean reward: {:.1f}, step: {},    best_reward: {},   best_running_reward: {:.3f}'.format(
             self.mean_loss, self.av_reward, self.step+1, int(self.max_score), self.best_running_score
         )
         to_print = '\t'.join([duration_str, str3])
@@ -187,7 +187,7 @@ class Logger:
         if len(self.ep_rewards) < self.av_length:
             # return median(self.ep_rewards)
             return 0.0
-        return median(self.ep_rewards[-self.av_length:])
+        return mean(self.ep_rewards[-self.av_length:])
 
     @property
     def total_reward(self):

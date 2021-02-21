@@ -27,15 +27,17 @@ class Arguments(Tap):
         'PongNoFrameskip-v4',
         'BreakoutNoFrameskip-v4',
         'MineRLTreechop-v0',
-        'MineRLObtainIronPickaxeDense-v0'
-    ] = 'MineRLTreechop-v0'
+        'MineRLObtainIronPickaxeDense-v0',
+        'CartPole-v0',
+        'Acrobot-v1'
+    ] = 'CartPole-v0'
 
     # Weights & Biases args
     log_run: bool = False  # Log with wandb
     local_log: bool = False  # Log locally in csv files
 
     # Training arguments
-    batch_size: int = 32  # Batch size of offline training
+    batch_size: int = 64  # Batch size of offline training
     train_steps: int = 1500000  # Total steps to train for
     test: bool = False  # Test saved agent
     resume: bool = False  # Resume training
@@ -55,7 +57,7 @@ class Arguments(Tap):
     batch_accumulator: str = 'mean'  # How to accumulate a batch of losses sum or mean
 
     # Deep learning arguments
-    lr: float = 0.0001  # Learning rate of deep learning
+    lr: float = 0.0000625  # Learning rate of deep learning
     save_freq: int = 2000  # Save model every N steps
     device = None  # Device to train model on. Defaults to GPU if available
 
@@ -77,8 +79,8 @@ class Arguments(Tap):
 
     # e-greedy
     greedy: bool = False  # Act only greedy (Use either this or noisy or both, otherwise no exploration)
-    epsilon_steps: int = 1000000  # Steps to anneal epsilon to its final value
-    epsilon_final: float = 0.025  # Final epsilon value
+    epsilon_steps: int = 100000  # Steps to anneal epsilon to its final value
+    epsilon_final: float = 0.01  # Final epsilon value
 
     # Noisy
     noisy: bool = False  # Use noisy linear layers in networks
@@ -87,8 +89,8 @@ class Arguments(Tap):
     # C51
     use_c51: bool = False  # Activate C51 algo
     atoms: int = 51  # Number of atoms to use, recommended to stick to 51
-    v_min: float = 0.0  # Minimum reward for C51 (clips lower values)
-    v_max: float = 50.0  # Maximum reward for C51 (clips higher values)
+    v_min: float = -20.0  # Minimum reward for C51 (clips lower values)
+    v_max: float = 20.0  # Maximum reward for C51 (clips higher values)
 
     # Automatically initiated variables
     double_dqn: bool = None
@@ -110,6 +112,7 @@ class Arguments(Tap):
     bonus_priority_demo: float = 1.0  # Bonus priority for demo observations.
     dqfd_loss: bool = False  # Use DQfD loss (Jdq + Jn + Je + Jl2)
     skip_pretrain: bool = False  # For skipping pre-training
+    no_expert_memory: bool = False
     pretrain_steps: int = 80000  # Batches to pre-train for
     margin_loss: float = 0.4  # Margin loss value.
     expert_fraction: float = 0.3  # Fraction of memory capacity dedicated to expert observations.
@@ -118,7 +121,11 @@ class Arguments(Tap):
     # ForgER
     use_forget: bool = False  # Control the decrease in expert data usage per batch
     forget_min: float = 0.5  # Minimum expert data to use in a batch
-    forget_final_step: int = 250000  # Final step to settle on min forget %
+    forget_final_step: int = 500000  # Final step to settle on min forget %
+
+    # Saliency
+    saliency_maps: bool = False
+    save_saliency: bool = False
 
     # Automatically initiated variables
     bins = None
@@ -133,12 +140,28 @@ class Arguments(Tap):
     def process_args(self) -> None:
         assert self.n_step >= 1, f"n-step needs to be bigger or equal to 1. N=1 is default DQN."
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
         self.double_dqn = not self.no_double_dqn
         self.prioritized = not self.no_prioritized
         self.dueling = not self.no_dueling
         self.action_branching = not self.no_action_branching
 
+        if self.env_name in ['CartPole-v0', 'Acrobot-v1']:
+            self.frame_skip = 1
+            self.frame_stack = 1
+            self.epsilon_final = 0
+        if self.no_expert_memory:
+            self.lambda3 = 0
+            self.learn_start //= 10
+            self.expert_fraction = 0
+
+        if self.saliency_maps:
+            self.test = True
+            self.outdir = prepare_output_dir(self.outdir)
+
         if 'MineRL' in self.env_name:
+            self.v_min: float = 0.0
+            self.v_max: float = 50.0
             self.lr = 0.0000625
             self.train_steps = 8000000 // 4
             self.learn_start //= 10

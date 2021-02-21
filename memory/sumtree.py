@@ -25,6 +25,9 @@ class SegmentTree:
     def __len__(self):
         return self.size
 
+    def get_base(self):
+        return self.tree[-self.size:]
+
     def build(self, arr):
         for i in range(self.size):
             self.tree[self.size - 1 + i] = arr[i]
@@ -68,6 +71,15 @@ class SegmentTree:
             idxs >>= 1
             idxs = idxs[idxs > 1]
             idxs = np.unique(idxs)
+
+    def print_tree(self):
+        idx = 0
+        cnt = 1
+        while cnt+idx <= len(self.tree):
+            max_idx = cnt + idx if cnt < self.tree_size else self.tree_size
+            print(self.tree[idx:max_idx])
+            idx += cnt
+            cnt *= 2
 
 
 class SumTree(SegmentTree):

@@ -8,6 +8,7 @@ from collections import Counter
 
 from memory.demo_memory import DemoReplayBuffer
 from memory.dataset_loader import ExpertDataset
+from memory.npz_loader import read_npz
 from utils.minerl_wrappers import LazyFramesFlipped, MyLazyFrames
 from utils.gen_args import Arguments
 
@@ -27,11 +28,15 @@ def fill_stacked_memory(
     :return: None
     """
 
+    memory.set_pretrain_phase(True)
+    if "minerl" not in args.env_name.lower():
+        read_npz(args, fill_size, memory)
+        return
+
     # Use instead of fill_size to get better variance of data
     def collate_fn(batch):
         return batch[0]
 
-    memory.set_pretrain_phase(True)
     env = args.env_name
     if 'Treechop' not in env and 'Dense' not in env:
         env = env.replace('-', 'Dense-')

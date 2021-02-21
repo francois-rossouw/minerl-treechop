@@ -1,3 +1,4 @@
+import os
 from typing import Tuple, Union, List, Type
 from collections import OrderedDict
 import itertools
@@ -11,19 +12,20 @@ import numpy as np
 import gym
 from gym import spaces
 
-from agents.dqn.models import DQNModel
+from agents.dqn.models import LinearDQNModel, ConvDQNModel
 from agents.common import bc_loss, AgentAbstract
+from memory.prioritized_memory import PrioritizedExperienceBuffer
 from memory.demo_memory import DemoReplayBuffer
 from memory.common import ExperienceSamples
 from utils.gen_args import Arguments
-from utils.utilities import totensor, soft_update, unsqueeze_obs, print_b
+from utils.utilities import totensor, soft_update, unsqueeze_obs, print_b, generate_saliency_map
 from utils.checkpointing import save_checkpoint, load_model
 from utils.mylogger import Logger
 from utils.minerl_wrappers import TupleSpace
 
 
 class DQN(AgentAbstract):
-    def __init__(self, args: Arguments, logger: Logger, action_space, observation_space, p_idx=0, **kwargs):
+    def __init__(self, args: Arguments, logger: Logger, action_space, observation_space: gym.spaces.Box, p_idx=0, **kwargs):
         """
         Main DQN agent class
         :param args: all default arguments. Can be changed in cmd line
@@ -43,7 +45,11 @@ class DQN(AgentAbstract):
         self.action_space = action_space
         self.is_branched = args.action_branching
         self.observation_space = observation_space
-        if not self.is_branched:
+        if isinstance(action_space, gym.spaces.Discrete):
+            self.cam_branch_idxs = None
+            self.n_actions = [action_space.n]
+            self.nr_action_branches = 1
+        elif not self.is_branched:
             self.cam_branch_idxs = None
             self.n_actions = [action_space.spaces['movement'].n]
             self.nr_action_branches = 1
@@ -58,10 +64,11 @@ class DQN(AgentAbstract):
             self.nr_action_branches = len(self.n_actions)
         self.logger = logger
         self._set_args(args)
+        self._model_type = LinearDQNModel if len(observation_space.shape) == 1 else ConvDQNModel
 
         if type(self) == DQN:
             # Only create models if not called from a subclass
-            self._create_models(args, self.n_actions, observation_space, DQNModel)
+            self._create_models(args, self.n_actions, observation_space, self._model_type)
 
     def _set_args(self, args: Arguments):
         self.batch_size = args.batch_size
@@ -91,23 +98,33 @@ class DQN(AgentAbstract):
         self.forget_min = args.forget_min
         self.batch_accumulator = args.batch_accumulator
         self.margin_loss = args.margin_loss
+        self.gen_saliency_maps = args.saliency_maps
+        self.save_saliency = args.save_saliency
+        self.saliency_outdir = os.path.join(args.outdir, "saliency")
+        if not os.path.exists(self.saliency_outdir):
+            os.mkdir(self.saliency_outdir)
 
     # noinspection PyUnresolvedReferences
-    def _create_models(self, args, n_actions, observation_space, model_cls: Type[DQNModel]):
-        in_ch, in_w, in_h = observation_space.shape
-        in_shape = (in_ch, in_w, in_h)
+    def _create_models(self, args, n_actions, observation_space, model_cls: Type[Union[LinearDQNModel, ConvDQNModel]]):
+        if len(observation_space.shape) > 1:
+            in_ch, in_w, in_h = observation_space.shape
+            in_shape = (in_ch, in_w, in_h)
+        else:
+            in_shape = None
+            in_ch = observation_space.shape[0]
+
         other_shape = 0
         if isinstance(self.observation_space, TupleSpace):
             other_shape = self.observation_space.other_shape[0]
 
         # Models
         self.online_net = model_cls(
-            args, n_actions, in_ch, in_shape, cat_in_features=other_shape
+            args, n_actions, in_ch, cat_in_features=other_shape, in_shape=in_shape
         ).to(self.device)
         self.online_net.train()
 
         self.target_net = model_cls(
-            args, n_actions, in_ch, in_shape, cat_in_features=other_shape
+            args, n_actions, in_ch, cat_in_features=other_shape, in_shape=in_shape
         ).to(self.device)
         self.target_net.eval()
         self.update_target_net(step=-1, tau=1.0)
@@ -126,6 +143,15 @@ class DQN(AgentAbstract):
         return self.action_space.sample()
 
     def exploit(self, obs) -> int:
+        if self.gen_saliency_maps:
+            obs.requires_grad_()
+            action = self.online_net.get_action(obs, self.action_space)
+            show = input("Show saliency maps?")
+            if show == 'y':
+                val_s_map, adv_s_maps = self.online_net.get_saliency_maps()
+                print(val_s_map)
+            return action
+
         with torch.no_grad():
             action = self.online_net.get_action(obs, self.action_space)
             return action
@@ -161,14 +187,13 @@ class DQN(AgentAbstract):
                     self.logger.update_epsilon(self.learn_start, self.epsilon_final, self.epsilon_steps)
                 if self.logger.step % self.replay_frequency == 0:
                     loss, *_ = self.learn(memory=memory)
-                    self.logger.add_expert_percentage(memory.demo_samples / self.batch_size)
+                    # self.logger.add_expert_percentage(memory.demo_samples / self.batch_size)
                     self.logger.add_loss(loss)
                 if self.logger.step % self.save_freq == 0:
                     self.save()
         return n_obs, done
 
-    def train_agent(self, args: Arguments, env, memory: Union[DemoReplayBuffer, None], p_idx=0):
-        seed_looper = itertools.cycle([args.seed, 21, 24, 28])
+    def train_agent(self, args: Arguments, env, memory: Union[DemoReplayBuffer, PrioritizedExperienceBuffer, None], p_idx=0):
         progressbar = tqdm(
             range(args.train_steps),
             desc='Ep: 0',
@@ -177,7 +202,7 @@ class DQN(AgentAbstract):
 
         self.logger.episode = 1
         # env.seed(args.seed)
-        env.seed(next(seed_looper))
+        env.seed(np.random.randint(0, 2**31-1))
         obs = env.reset()
 
         for self.logger.step in progressbar:
@@ -188,11 +213,10 @@ class DQN(AgentAbstract):
             obs, done = self.play_step(env=env, obs=obs, memory=memory)
             if done:
                 self.logger.finish_episode(verbose=args.verbosity > 1)
-                if args.fix_seed:
-                    # env.seed(args.seed)
-                    env.seed(next(seed_looper))
-                else:
-                    env.seed(np.random.randint(low=0, high=2**31-1))
+                # if args.fix_seed:
+                #     env.seed(np.random.randint(0, 2**31-1))
+                # else:
+                #     env.seed(np.random.randint(low=0, high=2**31-1))
                 obs = env.reset()
                 self.logger.episode += 1
 
@@ -236,10 +260,10 @@ class DQN(AgentAbstract):
             if self.batch_accumulator == 'mean':
                 e_loss /= self.nr_action_branches
 
+            el_wise_loss[experts] += self.lambda2 * e_loss
+
         # print(f"TD loss: {el_wise_loss.mean()}")
         # print(f"Expert loss: {e_loss.mean()}")
-
-        el_wise_loss[experts] += self.lambda2 * e_loss
 
         loss = (el_wise_loss * is_weights).mean()
         self.optimizer.zero_grad()
@@ -282,11 +306,13 @@ class DQN(AgentAbstract):
                 btn_mean = np.mean(btn_acc_arr) * 100
                 if self.logger.dw is not None:
                     self.logger.dw.write_pretrain_data(step, loss, btn_mean, cam_mean)
-                print_b(str(
+                result = str(
                     f'Loss: {loss}; \t'
                     f'Button accuracy: {btn_mean:.4f}; '
-                    f'Camera acc: {cam_mean:.4f};  '
-                ))
+                )
+                if self.cam_branch_idxs is not None:
+                    result = ''.join([result, f'Camera acc: {cam_mean:.4f};  '])
+                print_b(result)
                 # with args.writer as w:
                 #     w.add_scalar(tag='Pre-train_loss', scalar_value=loss, global_step=step)
                 loss_arr.clear()
@@ -316,7 +342,7 @@ class DQN(AgentAbstract):
                 n_qvals: List[torch.Tensor] = self.online_net(states)
                 t_qvals: List[torch.Tensor] = self.target_net(states)
                 return torch.cat([
-                    t_qval[range(self.batch_size), n_qval.argmax(1, keepdim=True)]
+                    t_qval[range(self.batch_size), n_qval.argmax(1)]
                     for t_qval, n_qval in zip(t_qvals, n_qvals)
                 ], dim=0)
 
@@ -393,7 +419,8 @@ class DQN(AgentAbstract):
         next_states = totensor(samples.next_states, self.device)
 
         actions = torch.tensor(samples.actions).to(self.device).long()
-        actions = actions.transpose(0, 1)
+        if self.nr_action_branches > 1:
+            actions = actions.transpose(0, 1)
 
         rewards = get_repeated_data(samples.rewards, self.device, (self.nr_action_branches, 1))
         non_terminals = get_repeated_data(samples.non_terminals, self.device, (self.nr_action_branches, 1))

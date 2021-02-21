@@ -9,7 +9,7 @@ import torch
 from agents import DQN, C51, fill_stacked_memory
 from utils import (Arguments, Logger, seed_things, make_env, make_minerl_env,
                    wrap_minerl_obs_space, wrap_minerl_action_space)
-from memory import DemoReplayBuffer
+from memory import DemoReplayBuffer, PrioritizedExperienceBuffer, UniformExperienceBuffer
 
 
 def main_train(args: Arguments):
@@ -44,10 +44,10 @@ def main_train(args: Arguments):
 
     memory = None
     if not args.test:  # Fill memory and pre-train before making env if not testing.
-        betasteps = (args.pretrain_steps + args.train_steps // 10) / args.replay_frequency
+        betasteps = args.pretrain_steps + args.epsilon_steps
         expert_capacity = int(args.memory_capacity * args.expert_fraction)
-        memory_capacity = args.memory_capacity - expert_capacity
-        memory = DemoReplayBuffer(
+        memory_capacity = args.memory_capacity - (expert_capacity if not args.no_expert_memory else 0)
+        kwargs = dict(
             capacity=memory_capacity,
             demo_capacity=expert_capacity,
             n_step=args.n_step,
@@ -55,17 +55,30 @@ def main_train(args: Arguments):
             gamma=args.gamma,
             prioritized=args.prioritized,
             bonus_priority_demo=args.bonus_priority_demo,
-            bonus_priority_agent=args.bonus_priority_agent
+            bonus_priority_agent=args.bonus_priority_agent,
+            normalize_by_max=False
         )
 
-        fill_stacked_memory(
-            args=args, fill_size=args.memory_capacity, action_space=action_space,
-            pretrain_action_space=pretrain_action_space, memory=memory)
+        if not args.no_expert_memory:
+            memory = DemoReplayBuffer(**kwargs)
+            fill_stacked_memory(
+                args=args, fill_size=args.memory_capacity, action_space=action_space,
+                pretrain_action_space=pretrain_action_space, memory=memory)
 
-        if not args.skip_pretrain:
-            agent.pretrain(args, action_space, pretrain_action_space, memory)
+            if not args.skip_pretrain:
+                agent.pretrain(args, action_space, pretrain_action_space, memory)
+        else:
+            if args.prioritized:
+                memory = PrioritizedExperienceBuffer(**kwargs)
+            else:
+                memory = UniformExperienceBuffer(**kwargs)
 
-    env = make_minerl_env(args.env_name, args) if minerl_env else make_env(args.env_name)
+    if minerl_env:
+        env = make_minerl_env(args.env_name, args)
+    elif args.env_name in ['PongNoFrameskip-v4', 'BreakoutNoFrameskip-v4']:
+        env = make_env(args.env_name)
+    else:
+        env = gym.make(args.env_name)
     try:
         if not args.test:
             agent.train_agent(args, env, memory)
@@ -81,12 +94,21 @@ def get_env_spaces(args: Arguments):
     # Create an return observation- and action spaces
     minerl_env: bool = 'MineRL' in args.env_name
     env_spec = gym.envs.registry.spec(args.env_name)
-    observation_space = env_spec._kwargs['observation_space']  # Private variable contains what we need
-    action_space = env_spec._kwargs['action_space']  # Private variable contains what we need
     pretrain_action_space = None
     if minerl_env:
+        observation_space = env_spec._kwargs['observation_space']  # Private variable contains what we need
+        action_space = env_spec._kwargs['action_space']  # Private variable contains what we need
         observation_space = wrap_minerl_obs_space(observation_space)
         action_space, pretrain_action_space = wrap_minerl_action_space(args, action_space)
+    else:
+        # Making env is rather cheap
+        if args.env_name in ['PongNoFrameskip-v4', 'BreakoutNoFrameskip-v4']:
+            sample_env = make_env(args.env_name)
+        else:
+            sample_env = gym.make(args.env_name)
+        observation_space = sample_env.observation_space
+        action_space = sample_env.action_space
+        sample_env.close()
     return observation_space, action_space, pretrain_action_space
 
 
@@ -126,10 +148,9 @@ def generate_wandb(args: Arguments):
 
 def set_def_rainbow(args: Arguments):
     # Default args to use rainbow (no noisy networks)
-    args.use_c51 = True
-    args.greedy = True
-    args.n_step = 10
-    args.dqfd_loss = True
+    # args.use_c51 = True
+    # args.greedy = False
+    pass
 
 
 if __name__ == '__main__':

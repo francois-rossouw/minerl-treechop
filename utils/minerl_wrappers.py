@@ -15,7 +15,7 @@ from utils.gen_args import Arguments
 from utils.wrappers import LazyFrames
 
 
-class CamDiscrete(gym.spaces.Discrete):
+class CamDiscrete(spaces.Discrete):
     """New space for camera actions. Simply changes no_op actions to map to no camera movement."""
     def __init__(self, n):
         super(CamDiscrete, self).__init__(n)
@@ -302,12 +302,14 @@ class DictClone(gym.ActionWrapper):
 
 class MyLazyFrames(LazyFrames):
     """Small adaptation for nearly 4x speedup. Need to transpose frames before this."""
-    def __init__(self, frames, out_shape: list):
-        super(MyLazyFrames, self).__init__(frames)
+    def __init__(self, frames, out_shape: Union[List, Tuple, None] = None):
+        super(MyLazyFrames, self).__init__(frames, out_shape)
         self._out_shape = out_shape
 
     def _force(self):
-        return np.array(self._frames).reshape(self._out_shape)
+        if self._out_shape is not None:
+            return np.array(self._frames).reshape(self._out_shape)
+        return np.array(self._frames)
 
     def __len__(self):
         return len(self._frames)

@@ -104,9 +104,11 @@ def impala_resnet_head(in_channels, in_shape):
 
 
 class LinearModel(nn.Module):
-    def __init__(self, args: Arguments, in_features: int = None, out_features=512, cat_in_features: int = 0):
+    def __init__(self, args: Arguments, in_features: int = None, out_features=12,
+                 cat_in_features: int = 0, hidden_layer=12):
         super(LinearModel, self).__init__()
         self._linear_out_size = out_features
+        self._h1_layer_size = hidden_layer
         self._cat_in_features = cat_in_features
 
         # List to keep references to all Noisy layers, used for reset noise
@@ -118,9 +120,9 @@ class LinearModel(nn.Module):
         assert in_features is not None
         linear_layer = nn.Linear if not args.noisy else NoisyLinear
         self.linear = nn.Sequential(
-            linear_layer(in_features + self._cat_in_features, 1024),
+            linear_layer(in_features + self._cat_in_features, self._h1_layer_size),
             nn.ReLU(),
-            linear_layer(1024, self._linear_out_size),
+            linear_layer(self._h1_layer_size, self._linear_out_size),
             nn.ReLU()
         )
         if self._cat_in_features > 0:
