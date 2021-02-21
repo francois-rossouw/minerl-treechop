@@ -120,12 +120,12 @@ class C51(DQN):
     def _get_next_qvals(self, states) -> torch.Tensor:
         with torch.no_grad():
             self.reset_noise(target=True)
-            t_qvals: List[torch.Tensor] = self.target_net(states)
+            t_qvals: Tuple[torch.Tensor] = self.target_net(states)
             # DOUBLE DQN
             if not self.double_dqn:
-                n_qvals: List[torch.Tensor] = t_qvals
+                n_qvals: Tuple[torch.Tensor] = t_qvals
             else:
-                n_qvals: List[torch.Tensor] = self.online_net(states)
+                n_qvals: Tuple[torch.Tensor] = self.online_net(states)
 
             a_stars: List[torch.Tensor] = [
                 (self.support_atoms.expand_as(n_qval) * n_qval).sum(2).argmax(1) for n_qval in n_qvals
@@ -139,7 +139,7 @@ class C51(DQN):
         qvals = F.log_softmax(selected_qvals, dim=1)
         with torch.no_grad():
             # Compute the projection of Tz onto the support z
-            tz = rewards + non_terminals * gamma * self.support_atoms
+            tz = rewards + non_terminals * gamma * self.support_atoms.unsqueeze(0)
             tz = tz.clamp(min=self.v_min, max=self.v_max)  # Clamp between supported values
             b = (tz - self.v_min) / self.delta_z
             l, u = b.floor().long(), b.ceil().long()
@@ -156,7 +156,6 @@ class C51(DQN):
             m_l.put_(l_indices, next_selected_qvals * (u.float() - b), accumulate=True)
             m_u.put_(u_indices, next_selected_qvals * (b - l.float()), accumulate=True)
             m = m_l + m_u
-
         loss = -torch.sum(m * qvals, dim=1)
         return loss, loss.detach()
 

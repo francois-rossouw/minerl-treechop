@@ -101,7 +101,7 @@ class DQN(AgentAbstract):
         self.gen_saliency_maps = args.saliency_maps
         self.save_saliency = args.save_saliency
         self.saliency_outdir = os.path.join(args.outdir, "saliency")
-        if not os.path.exists(self.saliency_outdir):
+        if args.save_saliency and not os.path.exists(self.saliency_outdir):
             os.mkdir(self.saliency_outdir)
 
     # noinspection PyUnresolvedReferences
@@ -313,8 +313,7 @@ class DQN(AgentAbstract):
                 if self.cam_branch_idxs is not None:
                     result = ''.join([result, f'Camera acc: {cam_mean:.4f};  '])
                 print_b(result)
-                # with args.writer as w:
-                #     w.add_scalar(tag='Pre-train_loss', scalar_value=loss, global_step=step)
+
                 loss_arr.clear()
                 btn_acc_arr.clear()
                 cam_acc_arr.clear()
@@ -347,8 +346,8 @@ class DQN(AgentAbstract):
                 ], dim=0)
 
     def _get_selected_qvals(self, qvals, actions):
-        # if not self.is_branched:
-        #     return qvals[range(self.batch_size), actions]
+        if not self.is_branched:
+            return qvals[range(self.batch_size), actions]
         # else:
         return torch.cat([
             qval_branch[range(self.batch_size), act_branch] for qval_branch, act_branch in zip(qvals, actions)
@@ -358,7 +357,7 @@ class DQN(AgentAbstract):
         next_selected_qvals = self._get_next_qvals(next_states)
         el_wise_loss, td_loss = self._calculate_td_loss(
             selected_qvals, next_selected_qvals, rewards, non_terminals, gamma)
-        if self.is_branched:
+        if self.nr_action_branches > 1:
             if self.batch_accumulator == 'mean':
                 el_wise_loss = el_wise_loss.view(self.nr_action_branches, self.batch_size).mean(0)
                 td_loss = td_loss.view(self.nr_action_branches, self.batch_size).mean(0)

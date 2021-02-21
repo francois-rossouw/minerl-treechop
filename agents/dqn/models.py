@@ -9,14 +9,14 @@ from utils.gen_args import Arguments
 
 
 class AdvLayer(nn.Module):
-    def __init__(self, in_features, out_features, linear_layer: Union[nn.Linear, NoisyLinear]):
+    def __init__(self, in_features, h_features, out_features, linear_layer: Union[nn.Linear, NoisyLinear]):
         super(AdvLayer, self).__init__()
         self.advantages = None
         if type(self) == AdvLayer:
             self.adv_layer = nn.Sequential(
-                linear_layer(in_features=in_features, out_features=12),
+                linear_layer(in_features=in_features, out_features=h_features),
                 nn.ReLU(),
-                linear_layer(in_features=12, out_features=out_features)
+                linear_layer(in_features=h_features, out_features=out_features)
             )
 
     def get_noisy_layers(self):
@@ -40,13 +40,13 @@ class AdvLayer(nn.Module):
 
 
 class BranchingAdvLayer(nn.Module):
-    def __init__(self, in_features, out_features: List[int],
+    def __init__(self, in_features, h_features, out_features: List[int],
                  linear_layer: Union[nn.Linear, NoisyLinear]):
         self.nr_action_branches = len(out_features)
         super(BranchingAdvLayer, self).__init__()
         if type(self) == BranchingAdvLayer:
             self.adv_layers = nn.ModuleList([
-                AdvLayer(in_features, branch_out, linear_layer) for branch_out in out_features
+                AdvLayer(in_features, h_features, branch_out, linear_layer) for branch_out in out_features
             ])
 
     def get_noisy_layers(self):
@@ -71,6 +71,8 @@ class BranchingAdvLayer(nn.Module):
 class ConvDQNModel(CNNModel):
     def __init__(self, args: Arguments, n_actions, in_channels, in_shape, val_shape=1, cat_in_features: int = 0):
         super(ConvDQNModel, self).__init__(args, in_channels, in_shape, cat_in_features)
+        assert len(args.nn_hidden_layers) == 3
+        hidden_size = args.nn_hidden_layers[-1]
         self.noisy = args.noisy
         self.dueling = args.dueling
         self.branched_out = isinstance(n_actions, List) and len(n_actions) > 1
@@ -80,9 +82,9 @@ class ConvDQNModel(CNNModel):
 
         if args.dueling:
             self.fc_v = nn.Sequential(
-                linear_layer(self._linear_out_size, 256),
+                linear_layer(self._linear_out_size, hidden_size),
                 nn.ReLU(),
-                linear_layer(256, val_shape)
+                linear_layer(hidden_size, val_shape)
             )
             if args.noisy:
                 self._add_noisy_layers(self.fc_v)
@@ -92,7 +94,7 @@ class ConvDQNModel(CNNModel):
     def _make_adv_layers(self, args, n_actions, linear_layer):
         if not isinstance(n_actions, Iterable):
             n_actions = [n_actions]
-        self.fc_a = BranchingAdvLayer(self._linear_out_size, n_actions, linear_layer)
+        self.fc_a = BranchingAdvLayer(self._linear_out_size, args.nn_hidden_layers[-1], n_actions, linear_layer)
 
         if args.noisy:
             # noinspection PyUnresolvedReferences
@@ -144,10 +146,12 @@ class ConvDQNModel(CNNModel):
 
 
 class LinearDQNModel(LinearModel):
-    def __init__(self, args: Arguments, n_actions, in_features, val_shape=1, cat_in_features: int = 0, hidden_size=12,
+    def __init__(self, args: Arguments, n_actions, in_features, val_shape=1, cat_in_features: int = 0,
                  *arg, **kwargs):
         super(LinearDQNModel, self).__init__(args, in_features, cat_in_features=cat_in_features)
         super(LinearDQNModel, self)._create_layers(args, in_features)
+        assert len(args.nn_hidden_layers) == 3
+        hidden_size = args.nn_hidden_layers[-1]
         self.noisy = args.noisy
         self.dueling = args.dueling
         self.branched_out = isinstance(n_actions, List) and len(n_actions) > 1
@@ -169,7 +173,7 @@ class LinearDQNModel(LinearModel):
     def _make_adv_layers(self, args, n_actions, linear_layer):
         if not isinstance(n_actions, Iterable):
             n_actions = [n_actions]
-        self.fc_a = BranchingAdvLayer(self._linear_out_size, n_actions, linear_layer)
+        self.fc_a = BranchingAdvLayer(self._linear_out_size, args.nn_hidden_layers[-1], n_actions, linear_layer)
 
         if args.noisy:
             # noinspection PyUnresolvedReferences

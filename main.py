@@ -44,7 +44,8 @@ def main_train(args: Arguments):
 
     memory = None
     if not args.test:  # Fill memory and pre-train before making env if not testing.
-        betasteps = args.pretrain_steps + args.epsilon_steps
+        betasteps = args.epsilon_steps + args.learn_start + (
+            0 if args.skip_pretrain or args.no_expert_memory else args.pretrain_steps)
         expert_capacity = int(args.memory_capacity * args.expert_fraction)
         memory_capacity = args.memory_capacity - (expert_capacity if not args.no_expert_memory else 0)
         kwargs = dict(
@@ -109,6 +110,7 @@ def get_env_spaces(args: Arguments):
         observation_space = sample_env.observation_space
         action_space = sample_env.action_space
         sample_env.close()
+        del sample_env
     return observation_space, action_space, pretrain_action_space
 
 

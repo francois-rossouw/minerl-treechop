@@ -12,8 +12,8 @@ from agents.common import NoisyLinear
 
 
 class C51AdvLayer(AdvLayer):
-    def __init__(self, in_features, out_features, atoms: int, linear_layer: Union[nn.Linear, NoisyLinear]):
-        super(C51AdvLayer, self).__init__(in_features, out_features, linear_layer)
+    def __init__(self, in_features, h_features, out_features, atoms: int, linear_layer: Union[nn.Linear, NoisyLinear]):
+        super(C51AdvLayer, self).__init__(in_features, h_features, out_features, linear_layer)
         self.adv_layer = nn.Sequential(
             linear_layer(in_features=in_features, out_features=256),
             nn.ReLU(),
@@ -23,12 +23,12 @@ class C51AdvLayer(AdvLayer):
 
 
 class C51BranchingAdvLayer(BranchingAdvLayer):
-    def __init__(self, in_features, n_actions: List[int], atoms: int,
+    def __init__(self, in_features, h_features, n_actions: List[int], atoms: int,
                  linear_layer: Union[nn.Linear, NoisyLinear]):
-        super(C51BranchingAdvLayer, self).__init__(in_features, n_actions, linear_layer)
+        super(C51BranchingAdvLayer, self).__init__(in_features, h_features, n_actions, linear_layer)
         if type(self) == C51BranchingAdvLayer:
             self.adv_layers = nn.ModuleList([
-                C51AdvLayer(in_features, branch_out, atoms, linear_layer) for branch_out in n_actions
+                C51AdvLayer(in_features, h_features, branch_out, atoms, linear_layer) for branch_out in n_actions
             ])
 
 
@@ -67,7 +67,8 @@ class ConvC51Model(ConvDQNModel):
     def _make_adv_layers(self, args: Arguments, n_actions, linear_layer):
         if not isinstance(n_actions, Iterable):
             n_actions = [n_actions]
-        self.fc_a = C51BranchingAdvLayer(self._linear_out_size, n_actions, args.atoms, linear_layer)
+        self.fc_a = C51BranchingAdvLayer(
+            self._linear_out_size, args.nn_hidden_layers[-1], n_actions, args.atoms, linear_layer)
         if args.noisy:
             self._noisy_layers.extend(self.fc_a.get_noisy_layers())
 
@@ -103,7 +104,8 @@ class LinearC51Model(LinearDQNModel):
     def _make_adv_layers(self, args: Arguments, n_actions, linear_layer):
         if not isinstance(n_actions, Iterable):
             n_actions = [n_actions]
-        self.fc_a = C51BranchingAdvLayer(self._linear_out_size, n_actions, args.atoms, linear_layer)
+        self.fc_a = C51BranchingAdvLayer(
+            self._linear_out_size, args.nn_hidden_layers[-1], n_actions, args.atoms, linear_layer)
         if args.noisy:
             self._noisy_layers.extend(self.fc_a.get_noisy_layers())
 

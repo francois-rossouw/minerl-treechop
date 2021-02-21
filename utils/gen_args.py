@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
+from typing import List
 
 try:
     import argcomplete
@@ -18,7 +19,6 @@ import gym
 import minerl
 
 CAM_DISC = np.array([-5.0/4, 0.0, 5.0/4])
-# CAM_DISC = np.array([-5.0, 0.0, 5.0])
 
 
 class Arguments(Tap):
@@ -28,9 +28,9 @@ class Arguments(Tap):
         'BreakoutNoFrameskip-v4',
         'MineRLTreechop-v0',
         'MineRLObtainIronPickaxeDense-v0',
-        'CartPole-v0',
+        'CartPole-v1',
         'Acrobot-v1'
-    ] = 'CartPole-v0'
+    ] = 'CartPole-v1'
 
     # Weights & Biases args
     log_run: bool = False  # Log with wandb
@@ -45,6 +45,9 @@ class Arguments(Tap):
     monitor: bool = False  # Save recordings of episodes.
     outdir: str = 'results'  # Directory path to save output files. If it does not exist, it will be created.
     verbosity: int = 2  # Verbosity levels: 0 = no printing; 1 = only progressbar; 2 = progress + episodic
+
+    # NN args
+    nn_hidden_layers: List[int] = [1024, 512, 256]
 
     # Default DQN params
     gamma: float = 0.99  # Discount factor of DQN training
@@ -146,10 +149,10 @@ class Arguments(Tap):
         self.dueling = not self.no_dueling
         self.action_branching = not self.no_action_branching
 
-        if self.env_name in ['CartPole-v0', 'Acrobot-v1']:
+        if self.env_name in ['CartPole-v1', 'Acrobot-v1']:
             self.frame_skip = 1
             self.frame_stack = 1
-            self.epsilon_final = 0
+            self.nn_hidden_layers = [64, 32, 16]
         if self.no_expert_memory:
             self.lambda3 = 0
             self.learn_start //= 10

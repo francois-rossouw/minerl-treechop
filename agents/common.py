@@ -104,11 +104,13 @@ def impala_resnet_head(in_channels, in_shape):
 
 
 class LinearModel(nn.Module):
-    def __init__(self, args: Arguments, in_features: int = None, out_features=12,
-                 cat_in_features: int = 0, hidden_layer=12):
+    def __init__(self, args: Arguments, in_features: int = None,
+                 cat_in_features: int = 0):
         super(LinearModel, self).__init__()
-        self._linear_out_size = out_features
-        self._h1_layer_size = hidden_layer
+        assert len(args.nn_hidden_layers) == 3
+        h_layers = args.nn_hidden_layers.copy()
+        self._h1_layer_size = h_layers[0]
+        self._linear_out_size = h_layers[1]
         self._cat_in_features = cat_in_features
 
         # List to keep references to all Noisy layers, used for reset noise
@@ -155,7 +157,6 @@ class CNNModel(LinearModel):
     def __init__(self, args: Arguments, in_channels, in_shape, cat_in_features: int = 0):
         super(CNNModel, self).__init__(args, cat_in_features=cat_in_features)
         self.cnn, self._cnn_out_size = nature_cnn(in_channels, in_shape)
-        # self.cnn, self._cnn_out_size = impala_resnet_head(in_channels, in_shape)
         super()._create_layers(args, self._cnn_out_size)
         
     def forward(self, x, *args, **kwargs) -> torch.Tensor:

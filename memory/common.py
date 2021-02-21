@@ -67,12 +67,12 @@ class ExperienceSamples:
     @property
     def next_states(self):
         for sample in self.samples:
-            yield np.asarray(sample[1]["state"]) if len(sample) >= 2 else self._empty_state
+            yield np.asarray(sample[0]["next_state"])
 
     @property
     def nth_states(self):
         for sample in self.samples:
-            yield np.asarray(sample[1]["state"]) if len(sample) >= self.n_step else self._empty_state
+            yield np.asarray(sample[-1]["next_state"]) if len(sample) >= self.n_step else self._empty_state
 
     @property
     def actions(self):
