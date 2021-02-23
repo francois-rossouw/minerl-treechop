@@ -28,9 +28,9 @@ class Arguments(Tap):
         'BreakoutNoFrameskip-v4',
         'MineRLTreechop-v0',
         'MineRLObtainIronPickaxeDense-v0',
-        'CartPole-v1',
+        'CartPole-v0',
         'Acrobot-v1'
-    ] = 'CartPole-v1'
+    ] = 'CartPole-v0'
 
     # Weights & Biases args
     log_run: bool = False  # Log with wandb
@@ -149,7 +149,7 @@ class Arguments(Tap):
         self.dueling = not self.no_dueling
         self.action_branching = not self.no_action_branching
 
-        if self.env_name in ['CartPole-v1', 'Acrobot-v1']:
+        if self.env_name in ['CartPole-v0', 'Acrobot-v1']:
             self.frame_skip = 1
             self.frame_stack = 1
             self.nn_hidden_layers = [64, 32, 16]

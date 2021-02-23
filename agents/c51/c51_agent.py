@@ -113,7 +113,6 @@ class C51(DQN):
             self.full_batch = self.nr_action_branches * self.batch_size
             self._linear_batch_idxs = torch.arange(self.full_batch).to(self.device).unsqueeze(-1).expand(
                 self.full_batch, self.atoms).reshape(-1) * self.atoms
-            print(self._linear_batch_idxs)
 
         return super().learn(memory, p_idx)
 

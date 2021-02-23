@@ -15,7 +15,7 @@ from utils.gen_args import Arguments
 
 MIN_REW_DICT = {
     'Acrobot-v1': -120,
-    'CartPole-v0': 150
+    'CartPole-v0': -200
 }
 
 
@@ -31,15 +31,18 @@ def load_numpy_data(game_name: str) -> Tuple[np.ndarray, ...]:
                 for i, r in enumerate(expert_data['rew']):
                     if sum(r) < min_rew:
                         bad_idxs.append(i)
+                expert_data['n_obs'] = copy.deepcopy(expert_data['obs'])
+
+                for idx in range(len(expert_data['obs'])):
+                    expert_data['n_obs'][idx] = copy.copy(expert_data['obs'][idx][1:])
+                    expert_data['obs'][idx] = expert_data['obs'][idx][:-1]
+
                 for key, values in expert_data.items():
                     v_list = []
                     for idx, val in enumerate(values.tolist()):
                         if idx in bad_idxs:
                             continue
-                        if key == 'obs':
-                            v_list.extend(val[:-1])
-                        else:
-                            v_list.extend(val)
+                        v_list.extend(val)
                     np_values = np.array(v_list)
                     if len(np_values) > 0:
                         if key == 'acs':
@@ -48,30 +51,50 @@ def load_numpy_data(game_name: str) -> Tuple[np.ndarray, ...]:
                             data[key] = np.concatenate((data[key], np_values.squeeze()), axis=0)
                         else:
                             data[key] = np_values.squeeze()
-    assert data['done'].shape[0] == data['obs'].shape[0], f"{data['done'].shape[0]} vs {data['obs'].shape[0]}"
-    return data['obs'], data['acs'], data['rew'], data['done']
+    assert data['done'].shape[0] == data['obs'].shape[0] == data['n_obs'].shape[0], f"{data['done'].shape[0]} vs {data['obs'].shape[0]} vs {data['n_obs'].shape[0]}"
+    return data['obs'], data['acs'], data['rew'], data['done'], data['n_obs']
 
 
 def read_npz(args: Arguments, fill_size, memory: DemoReplayBuffer):
+    observation_space = get_obs_space(args)
+    if isinstance(observation_space, gym.spaces.Box):
+        out_shape = observation_space.shape
+    elif isinstance(observation_space, gym.spaces.Discrete):
+        out_shape = [observation_space.n]
+    else:
+        raise NotImplementedError(f"No support for observation spaces other than Discrete or Box. Got {type(observation_space)}")
     frame_hist = deque([], maxlen=args.frame_stack)
-    states, actions, rewards, dones = load_numpy_data(args.env_name)
-    for idx, (state, action, reward, done) in enumerate(zip(states, actions, rewards, dones)):
+    n_frame_hist = deque([], maxlen=args.frame_stack)
+    states, actions, rewards, dones, n_states = load_numpy_data(args.env_name)
+    for idx, (state, action, reward, done, n_state) in enumerate(zip(states, actions, rewards, dones, n_states)):
         if idx >= fill_size:
             return
         frame_hist.append(state)
-        if len(frame_hist) < args.frame_stack:
-            continue
+        n_frame_hist.append(n_state)
+        while len(frame_hist) < args.frame_stack:
+            frame_hist.append(state)
+            n_frame_hist.append(n_state)
 
         memory.append(
-            state=MyLazyFrames(list(state)),
+            state=MyLazyFrames(list(frame_hist), out_shape),
             action=action,
             reward=reward,
             done=done,
+            next_state=MyLazyFrames(list(n_frame_hist), out_shape),
             expert=True
         )
         if done:
             memory.stop_current_episode()
+            frame_hist.clear()
+            n_frame_hist.clear()
     print(f"{len(memory)} transitions loaded from npz files.")
+
+
+def get_obs_space(args: Arguments):
+    sample_env = gym.make(args.env_name)
+    observation_space = sample_env.observation_space
+    sample_env.close()
+    return observation_space
 
 
 if __name__ == '__main__':

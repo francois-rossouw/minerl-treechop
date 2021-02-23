@@ -17,7 +17,7 @@ class DemoReplayBuffer(ReplayBufferAbstract):
     def __init__(
             self, prioritized: bool, capacity, demo_capacity, n_step, eps=0.01, alpha=0.6, beta0=0.4,
             betasteps=1000, gamma=0.99, ir_prob=0.0, n_policies=1, bonus_priority_demo=1.0,
-            bonus_priority_agent=0.001, other_policy_factor=0.1):
+            bonus_priority_agent=0.001, other_policy_factor=0.1, **kwargs):
         self.capacity = capacity
         self.demo_capacity = demo_capacity
         self.prioritized = prioritized
