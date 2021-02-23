@@ -346,8 +346,8 @@ class DQN(AgentAbstract):
                 ], dim=0)
 
     def _get_selected_qvals(self, qvals, actions):
-        if not self.is_branched:
-            return qvals[range(self.batch_size), actions]
+        if self.nr_action_branches == 1 and actions.shape[0] == self.batch_size:
+            return qvals[0][range(self.batch_size), actions]
         # else:
         return torch.cat([
             qval_branch[range(self.batch_size), act_branch] for qval_branch, act_branch in zip(qvals, actions)
