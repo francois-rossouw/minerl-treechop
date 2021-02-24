@@ -47,12 +47,12 @@ class DemoReplayBuffer(ReplayBufferAbstract):
                action: Union[np.ndarray, int] = None, reward: int = 0, done: bool = False,
                next_state: Union[LazyFrames, Tuple[LazyFrames, np.ndarray]] = None,
                skip_step: int = 0, p_idx: int = 0, prob=None, expert: bool = False,
-               **kwargs) -> None:
+               expert_scale: float = 1, **kwargs) -> None:
         memory = self.agent_memory
         if expert and (self.pretrain_phase and not self.demo_memory.is_full):
             memory = self.demo_memory
         memory.append(state=state, action=action, reward=reward, done=done, next_state=next_state,
-                      skip_step=skip_step, p_idx=p_idx, prob=prob, expert=expert, **kwargs)
+                      skip_step=skip_step, p_idx=p_idx, prob=prob, expert=expert, expert_scale=expert_scale, **kwargs)
 
     def _sample_from_memory(self, nsample_agent, nsample_demo, p_idx):
         """

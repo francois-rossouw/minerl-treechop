@@ -35,7 +35,7 @@ class UniformExperienceBuffer(ReplayBufferAbstract):
                done: bool = False,
                next_state: Union[LazyFrames, Tuple[LazyFrames, np.ndarray]] = None,
                skip_step: int = 0, p_idx: int = 0, expert: bool = False,
-               **kwargs) -> None:
+               expert_scale: float = 1, **kwargs) -> None:
         last_n_transitions = self.last_n_transitions[skip_step]
         last_n_transitions.append(dict(
             state=state,
@@ -44,7 +44,8 @@ class UniformExperienceBuffer(ReplayBufferAbstract):
             done=done,
             next_state=next_state,
             policy=p_idx,
-            expert=expert
+            expert=expert,
+            expert_scale=expert_scale
         ))
         if len(last_n_transitions) == self.n_step:
             self.add_transition(last_n_transitions, done)

@@ -37,8 +37,6 @@ class C51(DQN):
         self.full_batch = self.nr_action_branches * self.batch_size
         self._linear_batch_idxs = torch.arange(self.full_batch).to(self.device).unsqueeze(-1).expand(
             self.full_batch, args.atoms).reshape(-1) * args.atoms
-        print(self.full_batch)
-        print(self._linear_batch_idxs)
 
         self._model_type = LinearC51Model if len(observation_space.shape) == 1 else ConvC51Model
         if type(self) == C51:

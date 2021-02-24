@@ -34,7 +34,7 @@ class PrioritizedExperienceBuffer(UniformExperienceBuffer):
             action: Union[np.ndarray, int] = None, reward: int = 0, done: bool = False,
             next_state: Union[LazyFrames, Tuple[LazyFrames, np.ndarray]] = None,
             skip_step: int = 0, p_idx: int = 0, prob=None, expert: bool = False,
-            **kwargs) -> None:
+            expert_scale: float = 1, **kwargs) -> None:
         transition_id = skip_step
         last_n_transitions = self.last_n_transitions[transition_id]
         last_n_transitions.append(dict(
@@ -45,6 +45,7 @@ class PrioritizedExperienceBuffer(UniformExperienceBuffer):
             next_state=next_state,
             policy=p_idx,
             expert=expert,
+            expert_scale=expert_scale,
             **kwargs
         ))
         if len(last_n_transitions) == self.n_step:

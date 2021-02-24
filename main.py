@@ -80,6 +80,9 @@ def main_train(args: Arguments):
         env = make_env(args.env_name)
     else:
         env = gym.make(args.env_name)
+
+    print(env.reward_range)
+
     try:
         if not args.test:
             agent.train_agent(args, env, memory)

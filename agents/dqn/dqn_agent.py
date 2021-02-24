@@ -232,7 +232,7 @@ class DQN(AgentAbstract):
         forget_percentage = max(self.forget_min, 1.0 - self.logger.step/self.forget_final_step)
         samples, is_weights = memory.sample(self.batch_size, demo_fraction=forget_percentage, p_idx=p_idx)
         states, next_states, actions, rewards, non_terminals, \
-            is_weights, experts = self._extract_samples(samples, is_weights)
+            is_weights, experts, expert_scales = self._extract_samples(samples, is_weights)
 
         qvals = self.online_net(states, ret_func=None)
         selected_qvals = self._get_selected_qvals(qvals, actions)
@@ -259,7 +259,7 @@ class DQN(AgentAbstract):
             # e_loss, btn_acc, cam_acc = self._dqfd(qvals, actions, experts)
             if self.batch_accumulator == 'mean':
                 e_loss /= self.nr_action_branches
-
+            e_loss *= expert_scales[experts]
             el_wise_loss[experts] += self.lambda2 * e_loss
 
         # print(f"TD loss: {el_wise_loss.mean()}")
@@ -429,9 +429,10 @@ class DQN(AgentAbstract):
         else:
             is_weights = torch.ones(self.batch_size, device=self.device)
         expert = torch.tensor(samples.experts, dtype=torch.bool).to(self.device)
+        expert_scales = torch.tensor(samples.expert_scales, dtype=torch.float).to(self.device)
 
         return (
-            states, next_states, actions, rewards, non_terminals, is_weights, expert
+            states, next_states, actions, rewards, non_terminals, is_weights, expert, expert_scales
         )
 
     def _extract_n_samples(self, samples: ExperienceSamples):

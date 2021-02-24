@@ -102,6 +102,10 @@ class ExperienceSamples:
         return np.array([sample[0]["expert"] for sample in self.samples])
 
     @property
+    def expert_scales(self):
+        return np.array([sample[0]["expert_scale"] for sample in self.samples])
+
+    @property
     def policies(self):
         return np.array([sample[0]["policy"] for sample in self.samples])
 
