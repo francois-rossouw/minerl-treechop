@@ -8,6 +8,6 @@ argcomplete==1.11.1
 # torch==1.5.0  # Install with anaconda
 tqdm==4.41.1
 ttictoc==0.4.1
-typed_argument_parser==1.4
+typed_argument_parser>=1.4
 minerl==0.3.6
 tap==0.2

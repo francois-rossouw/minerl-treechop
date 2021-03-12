@@ -34,7 +34,7 @@ class AdvLayer(nn.Module):
             x = adv
         self.advantages = adv
         if ret_func is not None:
-            return ret_func(x, dim=2)
+            return ret_func(x, dim=-1)
         else:
             return x
 

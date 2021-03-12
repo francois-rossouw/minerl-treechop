@@ -44,6 +44,7 @@ class Logger:
     best_running_score: float = -np.inf
     loss: list = None
     epsilon: float = 1.0
+    epsilon_start: float = None
     rewards: list = None
     ep_rewards: list = None
     q_vals: list = None
@@ -60,6 +61,7 @@ class Logger:
         self.ep_rewards = []
         self.loss = []
         self.timer = Timer()
+        self.epsilon_start = self.epsilon
 
     def create_datawriter(self, args):
         self.dw = DataWriter(args)
@@ -196,4 +198,4 @@ class Logger:
     def update_epsilon(self, subtracts, final_eps, epsilon_steps):
         curr_step = self.step - subtracts + 1
         progress = max(1.0, epsilon_steps / curr_step)
-        self.epsilon = 1.0 - (1.0 - final_eps) / progress
+        self.epsilon = self.epsilon_start - (self.epsilon_start - final_eps) / progress

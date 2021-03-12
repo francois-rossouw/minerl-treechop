@@ -13,19 +13,14 @@ from memory.dataset_loader import ExpertDataset
 from utils.minerl_wrappers import MyLazyFrames
 from utils.gen_args import Arguments
 
-REW_RANGE_DICT = {
-    'Acrobot-v1': (-500, 0),
-    'CartPole-v0': (-200, 200)
-}
 
-
-def load_numpy_data(game_name: str) -> Tuple[np.ndarray, ...]:
-    min_rew, max_rew = REW_RANGE_DICT[game_name]
+def load_numpy_data(args: Arguments) -> Tuple[np.ndarray, ...]:
+    min_rew, max_rew = args.rew_range
     demonstrations_dir = os.path.join("demonstrations")
     data = dict()
     for root, folder, files in os.walk(demonstrations_dir):
         for filename in files:
-            if game_name.lower() in filename.lower():
+            if args.env_name.lower() in filename.lower():
                 expert_data = dict(np.load(os.path.join(demonstrations_dir, filename), allow_pickle=True))
                 expert_data['n_obs'] = np.array([x[1:].copy() for x in expert_data['obs']])
                 expert_data['obs'] = np.array([x[:-1].copy() for x in expert_data['obs']])
@@ -60,7 +55,7 @@ def read_npz(args: Arguments, fill_size, memory: DemoReplayBuffer):
         raise NotImplementedError(f"No support for observation spaces other than Discrete or Box. Got {type(observation_space)}")
     frame_hist = deque([], maxlen=args.frame_stack)
     n_frame_hist = deque([], maxlen=args.frame_stack)
-    states, actions, rewards, dones, n_states, expert_scales = load_numpy_data(args.env_name)
+    states, actions, rewards, dones, n_states, expert_scales = load_numpy_data(args)
     for idx, (state, action, reward, done, n_state, expert_scale) in enumerate(zip(states, actions, rewards, dones, n_states, expert_scales)):
         if idx >= fill_size:
             return

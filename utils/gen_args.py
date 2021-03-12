@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # PYTHON_ARGCOMPLETE_OK
-from typing import List
+from typing import List, Tuple
 
 try:
     import argcomplete
@@ -19,9 +19,14 @@ import gym
 import minerl
 
 CAM_DISC = np.array([-5.0/4, 0.0, 5.0/4])
+REWARD_RANGES = {
+    'Acrobot-v1': (-500, 0),
+    'CartPole-v0': (0, 200)
+}
 
 
 class Arguments(Tap):
+    experiment_name: str = None
     # noinspection PyUnresolvedReferences
     env_name: Literal[
         'PongNoFrameskip-v4',
@@ -31,6 +36,7 @@ class Arguments(Tap):
         'CartPole-v0',
         'Acrobot-v1'
     ] = 'CartPole-v0'
+    rew_range: Tuple[float, float] = None
 
     # Weights & Biases args
     log_run: bool = False  # Log with wandb
@@ -45,6 +51,7 @@ class Arguments(Tap):
     monitor: bool = False  # Save recordings of episodes.
     outdir: str = 'results'  # Directory path to save output files. If it does not exist, it will be created.
     verbosity: int = 2  # Verbosity levels: 0 = no printing; 1 = only progressbar; 2 = progress + episodic
+    train_episodes: int = 1500
 
     # NN args
     nn_hidden_layers: List[int] = [1024, 512, 256]
@@ -66,7 +73,7 @@ class Arguments(Tap):
 
     # Double DQN
     no_double_dqn: bool = False  # Use Double DQN
-    target_update: int = 2000  # When to update target network
+    target_update: int = 10000  # When to update target network
 
     # Dueling DQN
     no_dueling: bool = False  # Use dueling DQN
@@ -83,6 +90,7 @@ class Arguments(Tap):
     # e-greedy
     greedy: bool = False  # Act only greedy (Use either this or noisy or both, otherwise no exploration)
     epsilon_steps: int = 100000  # Steps to anneal epsilon to its final value
+    epsilon_start: float = 1.0
     epsilon_final: float = 0.01  # Final epsilon value
 
     # Noisy
@@ -90,15 +98,16 @@ class Arguments(Tap):
     noise_std: float = 0.5  # Standard noise value (not implemented)
 
     # C51
-    use_c51: bool = False  # Activate C51 algo
+    no_c51: bool = False  # Activate C51 algo
     atoms: int = 51  # Number of atoms to use, recommended to stick to 51
-    v_min: float = -20.0  # Minimum reward for C51 (clips lower values)
-    v_max: float = 20.0  # Maximum reward for C51 (clips higher values)
+    v_min: float = -10.0  # Minimum reward for C51 (clips lower values)
+    v_max: float = 10.0  # Maximum reward for C51 (clips higher values)
 
     # Automatically initiated variables
     double_dqn: bool = None
     prioritized: bool = None
     dueling: bool = None
+    use_c51: bool = None
 
     ####################################################################################################################
     #                                               MineRL specific                                                    #
@@ -143,19 +152,33 @@ class Arguments(Tap):
     def process_args(self) -> None:
         assert self.n_step >= 1, f"n-step needs to be bigger or equal to 1. N=1 is default DQN."
         self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.rew_range = REWARD_RANGES[self.env_name]
+        # self._set_min_max()
+        print(f"Reward range [{self.v_min}, {self.v_max}]")
 
         self.double_dqn = not self.no_double_dqn
         self.prioritized = not self.no_prioritized
         self.dueling = not self.no_dueling
         self.action_branching = not self.no_action_branching
+        self.use_c51 = not self.no_c51
 
-        if self.env_name in ['CartPole-v0', 'Acrobot-v1']:
+        if self.env_name in ['CartPole-v0', 'Acrobot-v1']:  # Simple envs
             self.frame_skip = 1
             self.frame_stack = 1
             self.nn_hidden_layers = [64, 32, 16]
+            self.pretrain_steps = 15000
+            self.forget_min = 0.0
+            self.learn_start = 500
+            self.forget_final_step = 10000
+            self.epsilon_final = 0.01
+            self.epsilon_start = 0.75
+            self.epsilon_steps = 4000
+            self.n_step = 6
         if self.no_expert_memory:
+            self.learn_start = 5000
+            self.epsilon_start = 1.0
+            self.epsilon_steps = 100000
             self.lambda3 = 0
-            self.learn_start //= 10
             self.expert_fraction = 0
 
         if self.saliency_maps:
@@ -189,6 +212,21 @@ class Arguments(Tap):
 
         if 'argcomplete' in sys.modules:
             argcomplete.autocomplete(self)
+
+    def _set_min_max(self):
+        possible_val_range = self.atoms - 11
+        min_rew, max_rew = self.rew_range
+        rew_val_range = abs(max_rew - min_rew)
+        val_range = possible_val_range if rew_val_range > possible_val_range else rew_val_range
+        if max_rew <= 0:
+            self.v_max = max_rew
+            self.v_min = max_rew - val_range
+        elif min_rew >= 0:
+            self.v_min = min_rew
+            self.v_max = min_rew + val_range
+        elif min_rew < 0 < max_rew:
+            self.v_min = -val_range // 2
+            self.v_max = val_range // 2
 
 
 def prepare_output_dir(user_specified_dir, argv=None,

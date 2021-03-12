@@ -145,14 +145,12 @@ class C51(DQN):
             u[(l < (self.atoms - 1)) * (l == u)] += 1
 
             # Distribute probability of Tz
-            m_l = torch.zeros_like(b)
-            m_u = torch.zeros_like(b)
+            m = torch.zeros_like(b)
             l_indices = self._linear_batch_idxs + l.view(-1)  # Linear indices (N*atoms + idx)
             u_indices = self._linear_batch_idxs + u.view(-1)  # Linear indices (N*atoms + idx)
             # Place target q-values at indices in 2d array
-            m_l.put_(l_indices, next_selected_qvals * (u.float() - b), accumulate=True)
-            m_u.put_(u_indices, next_selected_qvals * (b - l.float()), accumulate=True)
-            m = m_l + m_u
+            m.view(-1).index_add_(0, l_indices, (next_selected_qvals * (u.float() - b)).view(-1))
+            m.view(-1).index_add_(0, u_indices, (next_selected_qvals * (b - l.float())).view(-1))
         loss = -torch.sum(m * qvals, dim=1)
         return loss, loss.detach()
 

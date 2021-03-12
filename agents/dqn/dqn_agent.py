@@ -81,6 +81,7 @@ class DQN(AgentAbstract):
         self.save_freq = args.save_freq
         self.learn_start = args.learn_start
         self.replay_frequency = args.replay_frequency
+        self.epsilon_start = args.epsilon_start
         self.epsilon_final = args.epsilon_final
         self.epsilon_steps = args.epsilon_steps
         self.dueling = args.dueling
@@ -101,6 +102,8 @@ class DQN(AgentAbstract):
         self.gen_saliency_maps = args.saliency_maps
         self.save_saliency = args.save_saliency
         self.saliency_outdir = os.path.join(args.outdir, "saliency")
+        self.no_expert_memory = args.no_expert_memory
+        self.train_episodes = args.train_episodes
         if args.save_saliency and not os.path.exists(self.saliency_outdir):
             os.mkdir(self.saliency_outdir)
 
@@ -201,7 +204,7 @@ class DQN(AgentAbstract):
             dynamic_ncols=True)
 
         self.logger.episode = 1
-        # env.seed(args.seed)
+        env.seed(args.seed)
         env.seed(np.random.randint(0, 2**31-1))
         obs = env.reset()
 
@@ -213,12 +216,17 @@ class DQN(AgentAbstract):
             obs, done = self.play_step(env=env, obs=obs, memory=memory)
             if done:
                 self.logger.finish_episode(verbose=args.verbosity > 1)
+                env.seed(np.random.randint(0, 2**31-1))
                 # if args.fix_seed:
                 #     env.seed(np.random.randint(0, 2**31-1))
                 # else:
                 #     env.seed(np.random.randint(low=0, high=2**31-1))
                 obs = env.reset()
                 self.logger.episode += 1
+                if self.logger.episode > self.train_episodes:
+                    break
+
+        progressbar.close()
 
     def test_agent(self, args: Arguments, env, p_idx=0):
         self.train_agent(args, env, memory=None, p_idx=0)
@@ -230,6 +238,11 @@ class DQN(AgentAbstract):
 
     def learn(self, memory: DemoReplayBuffer, p_idx=0):
         forget_percentage = max(self.forget_min, 1.0 - self.logger.step/self.forget_final_step)
+        if (not self.no_expert_memory) and (not memory.pretrain_phase) and forget_percentage == 1.0 - self.logger.step/self.forget_final_step:
+            print("Reducing weight decay")
+            for group in self.optimizer.param_groups:
+                group["weight_decay"] = self.lambda3 * forget_percentage
+                print(group["weight_decay"])
         samples, is_weights = memory.sample(self.batch_size, demo_fraction=forget_percentage, p_idx=p_idx)
         states, next_states, actions, rewards, non_terminals, \
             is_weights, experts, expert_scales = self._extract_samples(samples, is_weights)

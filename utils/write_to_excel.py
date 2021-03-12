@@ -11,10 +11,11 @@ from utils.gen_args import Arguments
 
 
 class DataWriter:
-    """Object for logging results of training / evaluation."""
     def __init__(self, args: Arguments):
         self.start_time = datetime.now()
         self.folder = 'runs_recordings'
+        if args.experiment_name is not None:
+            self.folder = '/'.join([self.folder, args.experiment_name])
         self._set_sub_folder()
         if not os.path.exists(self.folder):  # Create folder if needed
             os.makedirs(self.folder)
@@ -59,6 +60,8 @@ class DataWriter:
 
     def _write_args(self, args):
         all_args = copy.deepcopy(args.as_dict())
+        # for key, value in all_args.items():
+        #     if isinstance(value, np.ndarray)
         with open(self.json_file, 'w') as outfile:
             json.dump(all_args, outfile, default=default, indent=2)
         # args.save('args.json')

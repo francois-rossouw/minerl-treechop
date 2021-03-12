@@ -18,7 +18,7 @@ def main_train(args: Arguments):
     seed_things(args.seed)
 
     # Logging things
-    logger = Logger(args.log_run)
+    logger = Logger(args.log_run, epsilon=args.epsilon_start)
     if args.log_run:
         generate_wandb(args)
     if args.local_log:
